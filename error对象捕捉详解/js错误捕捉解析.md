@@ -1,0 +1,478 @@
+# js错误捕捉
+## 前言
+错误一定会发生
+当 JavaScript 引擎执行 JavaScript 代码时，会发生各种错误：
+可能是语法错误，通常是程序员造成的编码错误或错别字。
+可能是拼写错误或语言中缺少的功能（可能由于浏览器差异）。
+可能是由于来自服务器或用户的错误输出而导致的错误。
+当然，也可能是由于许多其他不可预知的因素。   
+
+## 处理
+### try...catch
+当错误发生时，javascript会抛出错误，由于javascript是单线程所以其程序会挂起，并生成一个错误消息。
+我们可以采用**try...catch**的语法来捕捉错误，将可能发生错误的代码放在try {}语句块中，在catch {}语句块中进行捕捉。
+```js
+try {
+	//在这里运行代码
+}
+catch() {
+	//在这里处理错误
+}
+finally {
+	//无论是否出错，肯定都要执行的代码 (可省略)
+}
+```
+例如下面的代码a在未定义的情况下程序会抛出a is not defined的错误,该错误类型属于系统异常的**ReferenceError**类型；js会停止运行在报错的地方：
+```js
+console.log(a);
+console.log('js will not show this sentence');
+>>> Uncaught ReferenceError: a is not defined
+```
+我们可以采用**try...catch**的语法进行错误处理：
+```js
+try {
+  console.log(a);
+  console.log('js will not show this sentence');
+}
+catch (err) {
+  console.log(err);
+}
+console.log('js still work here');
+>>> this is the error msg:ReferenceError: a is not defined
+    js still work here
+```
+catch中捕获的返回的**ReferenceError**对象在各个浏览器中表现不一致,其中message和name属性为标准属性,所有属性和方法都在起原型对象上 Error.prototype.message和Error.prototype.name
+```js
+在chrome中返回
+  console.log(err.message); // "undefinedVariable is not defined"
+  console.log(err.name);   //ReferenceError             
+在ie中返回
+  {
+    "message":"“a”未定义",
+    "description":"
+    “a”未定义",
+    "number":-2146823279
+  }
+
+```
+try...catch总是**成对**出现，如果只有try而没有catch程序会抛出错误
+```js
+try {
+  console.log(a);
+}
+>>> Uncaught SyntaxError: Missing catch or finally after try
+```
+**try...catch只能捕捉同步执行代码的错误**，对于异步执行的代码无法捕捉，考虑如下代码：
+```js
+try {
+  setTimeout(function() {
+    console.log(a);
+  }, 100);
+}
+catch (err) {
+    console.log(err)
+}
+>>> Uncaught ReferenceError: a is not defined
+```
+同理ajax的错误捕捉也是无效的：
+```js
+try {
+	request(url, function(error, response, body) {
+		if (!error && response.statusCode == 200) {
+            console.log(body)
+        } else {
+        	throw new Error("an Error occur")
+        }
+	})
+} catch (e) {
+	// 这里并不能捕获回调里面抛出的异常
+}
+```
+此外，try...catch 无法捕捉语法错误，例如if i=1；因为程序在编译阶段就会发现错误并且停止运行。
+### window.onerror
+既然try...catch只能捕捉同步代码错误，那如何能够捕捉或者处理异步函数中的错误呢？
+在浏览器宿主环境中提供了**window.onerror属性**来进行全局的异常监听。
+* 它接受5个参数，错误消息msg,文件file,line错误发生的行数，col错误发生的列数，error 包含错误类型的完整错误消息
+* onerror属性可以return true 来阻止控制台中打印出错误信息。
+* onerror属性同级的代码块中不能出现**语法错误**，否则onerror函数无法执行，也就无法进行错误消息的监听了，解决方法是将window.onerror放到单独的js文件中加载，这样也符合业务分离的原则,但是其必须先与其他业务代码先行加载。
+```javascript
+window.onerror = function(msg, file, line, col, error) {
+  console.log(msg, file, line, col, error);
+  return true;//控制台将不会输出错误信息
+}
+if i=0 //语法错误，程序无法执行也无法监控
+或者
+window.addEventListener("error", function(msg, file, line, col, error){
+  ...
+})
+console.log(a)
+>>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
+```
+这样很方便我们进行前端数据的监控和上报，配合图片ping的方式进行数据上报
+
+```javascript
+window.onerror = function(msg, file, line, col, error) {
+  console.log(msg, file, line, col, error);
+  let upload = new Image();
+  upload.src = 'http://api.upload?msg='+ 'js 发生错误：'+ msg;
+}
+或者
+window.addEventListener("error", function(msg, file, line, col, error){
+  ...
+})
+
+```
+**非同源（跨域）js导致的error**
+出于安全性的考虑，对于跨域js请求资源内的js报错onerror属性无法获取到全部信息，
+```js
+//跨域情况下
+>>> Script error.  0 0 null
+//非跨域情况下
+>>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
+```
+要想获取到全部信息可以进行如下两个设置：
+* 在服务器端启用允许跨域CORS协议，设置响应头属性Access-Control-Allow-Origin为'*'允许全部域名访问或者允许访问的白名单域名地址；
+* 设置script请求标签头部属性crossorigin，表明该js资源是合法跨域访问的资源，该属性支持anonymous和use-credentials两个value值，不设置情况下默认为anonymous，详细可查看[https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes]
+```js
+response.writeHead(200, {
+    'Content-Type': contentType,
+    'Access-Control-Allow-Origin': '*'
+});
+<script src="http://10.34.43.54:8787/test.js" crossorigin></script>
+```
+### error对象
+浏览器对错误的处理过程可以理解为自动创建一个error实例对象并且抛出，用户也可以自定义error对象并且通过throw方法抛出,这和浏览器自动抛出错误并没有差别。
+
+通过创建构造函数Error的实例可以自定义error对象，
+**`new Error([message[, fileName[,lineNumber]]])`**
+  **`message`** 错误消息
+  **`fileName `** 错误发生的文件名（默认为错误发生的文件）
+  **`lineNumber `** 错误发生的行号（默认为错误发生行号）
+
+例如如下代码为用户自定义错误并且抛出：
+```js
+try {
+  throw new Error("Whoops!"); 
+}
+catch(e) {
+  console.log(e.name + ": " + e.message);
+}
+```
+**error类型**
+除了上面创建的普通的error类型，浏览器还内置6中错误类型：
+`EvalError`
+创建一个error实例，表示错误的原因：与 eval() 有关。
+`InternalError `
+创建一个代表Javascript引擎内部错误的异常抛出的实例。 如: "递归太多".
+`RangeError`
+创建一个error实例，表示错误的原因：数值变量或参数超出其有效范围。
+`ReferenceError`
+创建一个error实例，表示错误的原因：无效引用。
+`SyntaxError`
+创建一个error实例，表示错误的原因：eval()在解析代码的过程中发生的语法错误。
+`TypeError`
+创建一个error实例，表示错误的原因：变量或参数不属于有效类型。
+`URIError`
+创建一个error实例，表示错误的原因：给 encodeURI()或  decodeURl()传递的参数无效。
+
+可以创建任意一种错误类型的实例并且抛出例如：new ReferenceError();
+其中本文中最常见的就是 ReferenceError类型，变量未定义时会报此类型的error错误，
+```js
+try {
+  console.log(a);
+}
+catch (err) {
+  console.log(err instanceof ReferenceError);
+}
+>>> true
+```
+所有的error类型都继承自**Error构造函数**
+
+**Error构造函数**
+error构造函数不含有任何的属性和方法,所有的方法和属性都是在原型链上进行的继承得到的，可以对其原型链进行方法和属性的添加，使得添加的属性和方法在其所有的实例上都生效，但是不得遍历，枚举和重写
+```js
+Error.prototype 属性的属性特性：
+writable	false
+enumerable	false
+configurable	false
+```
+* 属性：各浏览器表现不一致，标准属性有两个Error.prototype.message错误信息和Error.prototype.name错误名；Microsoft含有description错误描述和number错误码，Mozila中含有fileName,lineNumber,columnNumber,stack信息。
+* 方法：Error.prototype.toSource() 返回一个表示该对象的字符串，重写自 Object.prototype.toString() 方法 
+
+更多相关用法参考[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Error]
+
+## promise函数中的错误捕捉
+一个简单的promise对象实现如下：
+
+```js
+function Promise(cb) {
+  this.status = 'pending';
+  try {
+    cb(this.resolve, this.reject);
+  }
+  catch(err) {
+    this.status = 'error';
+    this.erorMsg = err;
+    return this;
+  }
+}
+Promise.prototype.resolve = function() {
+  this.status = 'resolved';
+  return this;
+}
+Promise.prototype.reject = function() {
+  this.status = 'rejected';
+  return this;
+}
+Promise.prototype.then = function(cbThenResolved, cbThenRejected) {
+  if(this.status === 'resolved') {
+    cbThenResolved();
+  }
+  if(this.status === 'rejected') {
+    cbThenRejected();
+  }
+  return this;
+}
+Promise.prototype.catch = function(cbCatch) {
+  if(cbCatch && this.status==='error') {
+    cbCatch(this.erorMsg);
+  }
+}
+
+```
+以上为一个promise构造函数的简单实现，我们可以对其进行调用如下：
+```js
+new Promise(function(resolve, reject) {
+  //耗时的操作
+  resolve();
+})
+.then(function(){//状态resolved
+  console.log('promise instance resolved');
+}, function() {//状态rejected
+  console.log('promise instance rejected');
+})
+.catch(function(err) {
+  console.log('error msg:'+ err);
+})
+```
+可以看到promise构造方法本身是一个同步方法，当新建new 一个promise对象时会立即同步执行内部的方法。
+promise支持链式操作，我们在then方法中捕捉状态的改变，catch中捕捉错误；
+then方法中接受两个函数其中第一个函数为状态变为resolve时的回调函数，第二个为状态变为rejected时的回调函数，如果promise状态变更为rejected那么将不会进入到接下来的任何then方法中的第一个函数，如果该then方法没有提供reject的回调，那么promise将会一直向下寻找直到找到最近的reject回调，看下面例子
+```js
+new Promise(function(resolve, reject) {
+  //耗时的操作
+  reject();
+})
+.then(function(){//状态resolved
+  console.log('promise instance resolved1');
+})
+.then(function(){
+  console.log('promise instance resolved2');
+},function() {//状态rejected
+  console.log('promise instance rejected1');
+})
+.then(function(){
+  console.log('promise instance resolved3');
+},function() {//状态rejected
+  console.log('promise instance rejected2');
+})
+.catch(function(err) {
+  console.log('error msg:'+ err);
+})
+
+>>> promise instance rejected1
+>>> promise instance resolved3
+```
+上例中promise对象的状态被更改为了rejected所以第一个then回调中没有对应的reject回调进行捕捉，将会进入到第二个then方法的reject回调中，该reject回调中并未有任何返回值，所以其reject被处理后会进入到then方法的resolve回调中
+
+javascript原生实现了promise对象，其内部一共有**pending**（进行中）、**fulfilled**（已成功）和**rejected**（已失败）3个状态，并且状态之间一旦发生改变就不能再更改状态了，任何时候我们都可以获得该状态。
+也可以在promise末尾添加catch的方法来进行错误捕捉，它其实是then(null, function() {})的语法糖，作为promise错误的兜底方法，这样无论前面的操作链出现任何的抛错或者rejected状态都会进入到catch语句。
+
+promise函数的错误无法用try...catch在外部进行捕捉，因为promise函数虽然在初始化话的时候回立即执行，但是其返回结果会放入到microtask对象的执行队列，该队列会在主程序末尾执行(区别于setimeout的macrotask队列,该队列会在下一次任务循环进行，所以microtask会先于macrotasks任务执行)，所以抛出的错误此时的执行环境以及不在try...catch的同步语句中了，所以无法捕捉。
+### Promise.all中的错误处理
+Promise.all会依次行参数数组内的所有promise对象，如果不是promise对象，会先调用promise.resolve进行转换；如果所有对象没有错误或者reject或者所有错误都被捕捉那么promise.all的状态会变为resolved,如果有错误或reject未捕捉那么其产生的第一个错误对象会被promise.all中的catch捕捉到，看下面例子：
+```js
+var f1 = new Promise(function() {
+	throw new Error('error 1 inner');
+})
+.catch(function(err) {
+	console.log(err);
+});
+
+var f2 = new Promise(function() {
+	throw new Error('error 2 inner');
+})
+
+var f3 = new Promise(function() {
+	throw new Error('error 3 inner');
+})
+.catch(function(err) {
+	console.log(err);
+});
+
+var f4 = new Promise(function() {
+	console.log('enter f4')
+	throw new Error('error 4 inner');
+})
+
+Promise.all([f1, f2, f3, f4]).then(function() {
+	console.log('resolved');
+})
+.catch(function(err) {
+	console.log(err+ ' outer');
+});
+
+>>> enter f4
+>>> error 1 inner
+>>> error 3 inner
+>>> error 2 inner outer
+```
+上面的f2函数的错误并没有被捕捉，所以导致整个promise.all的状态变为rejected,由于f1和f3中的错误都被自身捕捉了，不会进入到promise.all中，所以只有f2和f4中的错误会被捕捉，返回值中第一个错误f2中的错误。
+第一个输出为f4中的console.log是因为promise函数会被立即执行，但是then和catch的回调会被存放到microtasks队列中，该队列会添加到当前主程序的末尾，macrotasks的前面执行，所以会先输出"enter f4",再输出错误。
+
+promise内部状态改变后并不影响其后面语句的执行，并且会先于then回调方法执行，但是如果再后面再抛出错误，将无法捕获并且不会冒泡到window错误中去,错误后面的代码也无法执行了；如果后面再进行状态更改也是无效的，状态是不可逆的。
+```js
+var promise=new Promise(function(resolve,reject){
+   resolve();
+   console.log(1)
+   reject();
+   console.log(2)
+   throw new Error('error happens')
+   console.log(3)//该错误无法被捕获
+})
+promise.then(function(){
+  console.log('resolved');
+}).catch(function(e){
+  console.log(e)
+})
+
+>>> 1
+>>> 2
+>>> resolved
+```
+上面程序执行后先执行了promise中的程序，遇到resolve后状态凝固了，然后将then中的回调函数推入到主程序末尾的microtasks中，接下来执行主程序后面的语句打印出1；接来下遇到reject状态也不会改变了，再遇到error后程序停止运行，接下来执行microtasks中的任务，打印出“resolved”，程序执行完毕。
+
+
+## async函数的错误捕捉
+async 函数时ES2017标准引入的，是Genertor函数的语法糖；async函数的返回值是promise对象，所以其对于错误的处理和一般promise的方式类似；可以用then方法指定resolve和reject回调，也可以使用catch方法进行错误兜底。
+```js
+async function getGoods() {
+	const goodsName = await getGoodsName();
+	const goodsList = await getGoodsList(goodsName);
+	return goodsList;//返回值会成为then方法的参数
+}
+
+getGoods().then(function(goodsList) {
+	//执行成功将会打印以下信息
+	console.log(goodsList)
+}, function(err) {
+	//状态被reject或者抛出错误打印以下信息
+	console.log(goodsList)
+});
+
+async function getError() {
+	throw new Error('error happens');
+}
+getError().then().catch(function(err) {
+	console.log(err)
+});
+
+>>> Error: error happens
+```
+async函数返回的promise对象会在函数体内所有语句（包括同步和异步语句）执行完成成才会发生状态的转换，除非遇到return语句或者程序抛出错误，promise状态就会立即发生改变然后执行then方法中的回调，这当中包括以下几种情况：
+* 程序遇到return语句
+* 同步语句发生错误或者手动抛出errow错误
+* await后面的异步语句产生的promise对象状态变成reject或者抛出错误
+
+从第3中情形可以看到，如果await语句后的异步程序发生错误，则整个async函数会停止运行，直接状态变成rejected,由于在书写代码的时候同步代码产生的错误很容易排查，但是异步程序产生的错误情况复杂不太容易发现，（比如一个ajax请求导致的错误等），如果整个async函数停止运行肯定是我们不期望看到的，我们希望即使前一个异步操作失败也不影响到后面的异步操作。所以必须对其进行错误捕捉：
+我们可以对await后面的promise对象进行catch方法的捕捉
+```js
+	async function getGoodsName() {
+		throw new Error('error happens inside');
+	}
+	async function getGoodsList() {
+		return '';
+	}
+
+	async function getGoods() {
+		try {
+			const goodsName = await getGoodsName();
+		} catch(err) {
+			console.log(err);
+		}
+			const goodsList = await getGoodsList(goodsName);
+			return goodsList;//返回值会成为then方法的参数
+		}
+
+	getGoods()
+		.then(function(data) {
+			console.log('resolved')
+		})
+		.catch(function(err) {
+			console.log('error happens outside');
+		});
+	
+	>>> Error: error happens inside
+    >>> resolved
+```
+async 函数内部wait后面的异步语句不会加入到**microtask的事件队列**中去，可以看做始终处在async函数内部，而不像一般的异步函数会推入到事件循环中，其执行环境是window对象；么它抛出的错误程序会从异步程序冒泡到外层的await语句所在的语句块,所以也可以用**try...catch**的方式进行捕捉,如果不捕捉那么将会冒泡到async函数最外层的catch方法。
+```js
+	async function getGoodsName() {
+		throw new Error('error happens inside');
+	}
+	async function getGoodsList() {
+		return '';
+	}
+
+	async function getGoods() {
+		try {
+			const goodsName = await getGoodsName();
+		} 
+		catch(err) {
+			console.log(err);
+		}
+			const goodsList = await getGoodsList();
+			return goodsList;//返回值会成为then方法的参数
+		}
+
+	getGoods()
+		.then(function(data) {
+			console.log('resolved')
+		})
+		.catch(function(err) {
+			console.log('error happens outside');
+		});
+	
+	>>> Error: error happens inside
+    >>> resolved
+```
+如果有多个await语句可以采用最外层包裹try...catch的方式，这样就不用每一个await语句都进行错误处理了，即使报错程序依然会进入到async外围的then函数中的resolve回调中，所以我们经常看到这样的写法：
+```js
+	async function getGoods() {
+		try {
+			const goodsName = await getGoodsName();
+			const goodsList = await getGoodsList();
+			return goodsList;//返回值会成为then方法的参数
+		} 
+		catch(err) {
+			console.log(err);
+		}
+
+	getGoods()
+		.then(function(data) {
+			//即使出错也会进入到这里
+			console.log('resolved')
+		})
+		.catch(function(err) {
+			console.log('error happens outside');
+		});
+
+	>>> resolved
+```
+
+
+
+
+
+
+
