@@ -533,6 +533,10 @@ catch(err) {
 }
 console.log(step.next());
 console.log(step.next());
+
+>>> error happened
+>>> { value: undefined, done: true }
+>>> { value: undefined, done: true }
 ```
 
 
