@@ -11,6 +11,7 @@
 ### try...catch
 当错误发生时，javascript会抛出错误，由于javascript是单线程所以其程序会挂起，并生成一个错误消息。
 我们可以采用**try...catch**的语法来捕捉错误，将可能发生错误的代码放在try {}语句块中，在catch {}语句块中进行捕捉。
+
 ```js
 try {
 	//在这里运行代码
@@ -56,7 +57,7 @@ catch中捕获的返回的**ReferenceError**对象在各个浏览器中表现不
 
 ```
 try...catch总是**成对**出现，如果只有try而没有catch程序会抛出错误
-```js
+```js {cmd=true}
 try {
   console.log(a);
 }
@@ -469,6 +470,74 @@ async 函数内部wait后面的异步语句不会加入到**microtask的事件�
 
 	>>> resolved
 ```
+## Generator 函数中的错误捕捉
+**Generator.prototype.throw**
+
+Generator函数初始化时会返回一个遍历器对象，Generator的原型链上有一个throw方法,
+所以每一个遍历器对象有一个throw方法，可以在函数体外抛出错误，然后在函数体内部捕获。
+如果函数体内部未进行捕获或者函数体已经执行完毕，错误会冒泡到外层函数也即throw方法调用的作用域。
+throw可以抛出字符串或者error对象
+```js {cmd="node"}
+var f = function* () {
+	try {
+		yield;
+	}
+	catch(err) {
+		console.log(err, 'inside');
+	}
+}
+
+var step = f();
+step.next();
+step.throw('error happened');
+// step.throw(new Error('error happened')); 也可以抛出
+try {
+	step.throw('error happened2');
+}
+catch(err) {
+	console.log(err, 'outside');
+}
+```
+throw方法抛出的错误如果要被内部捕获，至少要执行过一次next方法，否则内部无法捕捉错误，相当于内部程序还未开始运行。
+```js
+var f = function* () {
+	try {
+		yield;
+	}
+	catch(err) {
+		console.log(err, 'inside');
+	}
+}
+
+var step = f();
+step.next();
+step.throw('error happened');
+
+>>> Uncaught error happened
+```
+throw语句错误被捕获后程序会接着向下执行，相当于它是一次错误类型的next语句执行，如果错误被catch了则会继续执行下面语句，如果错误并没有被catch那么该函数体内的语句不会再执行了，任何时候调用next都会返回`{value: undefined, done: true}`，javascript认为函数体已经运行结束了。
+```js {cmd="node"}
+var f = function* () {
+	yield;
+	yield 2;
+	yield 3;
+}
+
+var step = f();
+step.next();
+try {
+	step.throw('error happened');
+}
+catch(err) {
+	console.log(err);
+}
+console.log(step.next());
+console.log(step.next());
+```
+
+
+
+
 
 
 
