@@ -538,6 +538,204 @@ console.log(step.next());
 >>> { value: undefined, done: true }
 >>> { value: undefined, done: true }
 ```
+## Express中的错误捕捉
+express框架是最流行的的nodejs服务器框架，框架对于请求的处理由一个个的中间件组成，中间件安装顺序依次往下执行，执行的切换交给**next**方法进行传递。
+一个简单的express服务器示例如下
+```js
+var createError = require('http-errors');
+var express = require('express');
+
+var app = express();
+
+app.use(bodyParser.json());
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', function(req, res, next) {
+	console.log('enter root router');
+	next();//如果不写next方法，程序将无法往下执行，无法进入到list路由
+});
+app.get('/list', function(req, res, next) {
+	console.log('enter list router');
+	res.send('请求成功');
+});
+
+process.env.PORT = '80';//设置端口为80
+module.exports = app;
+
+>>> enter root router
+>>> enter list router
+```
+* 中间件可以简单区分为**路由中间件**和一般的**方法处理中间件**。
+* 每个中间件接受**3**个或者**4**个参数，express内部有判断机制，如果中间件的参数为3个则认为是**正常处理中间件**为4个则认为是**错误处理中间件**；3个参数依次为**request,response,next**;4个参数为**err,request,response,next**。
+* 错误可以系统抛出也可以手动抛出，手动抛出方法是对next方法添加参数，express会认为是抛出错误，例如`next(new Error('err happens'))`，参数可以是**route**字符串以外的任何布尔值为true的数据类型，因为在**路由中间件**中'route'代表跳过当前路由余下的处理程序。
+* 当错误发生时，会跳过中间件栈中的其余剩下的正常处理中间件而直接进入到错误中间件队列，依次处理错误，如果错误处理中间件中并没有response回错误信息，那么错误最终会进入到兜底的错误处理程序，会返回客户端默认的错误堆栈信息。
+* 错误处理程序一般放在最后，可以添加多个错误处理程序。
+```js
+app.get('/', function(req, res, next) {
+	var c = a+1;//a变量未定义，会抛出错误
+	next();
+});
+app.get('/list', function(req, res, next) {
+	//a变量未定义抛出的错误导致跳过所有一般中间件，所以程序不会进入到这里
+	console.log('will not come to here')
+});
+app.use(function(err, req, res, next) {
+	//程序会直接进入到此处错误处理中间件
+	console.log('err enter');
+	next(err);
+});
+app.use(function(err, req, res, next) {
+	//程序会直接进入到此处错误处理中间件
+	res.status(500);
+	res.render('error', { error: err });
+});
+```
+上例中变量 a 未定义，所以抛出错误,程序会跳过所有的一般中间件而进入到错误处理程序中,再通过next传递到下一个错误处理中间件，这样的话我们可以为程序`添加不同的错误处理中间件来满足不同的错误处理需求`，例如可以对错误日志进行收集等。
+```js
+app.use(logErrors)
+app.use(clientErrorHandler)
+app.use(errorHandler)
+```
+```js
+function logErrors (err, req, res, next) {
+  console.error(err.stack)//对错误日志进行打印
+  next(err)
+}
+```
+```js
+function clientErrorHandler (err, req, res, next) {
+  if (req.xhr) {
+    res.status(500).send({ error: 'Something failed!' })
+  } else {
+    next(err)
+  }
+}
+```
+```js
+function errorHandler (err, req, res, next) {
+  res.status(500)//以上没有response的错误都会进入到该错误
+  res.render('error', { error: err })
+}
+```
+#### Express中的404错误
+404本身不是错误请求，只是请求地址没有找到对应的路由，一般在程序的的最后面加上兜底的404处理中间件就行了,这样未进入到任何路由的请求会走到该中间件来。
+```js
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+	res.status = 404;
+	res.render('error', { error: '404' });
+});
+```
+#### Express中的异步错误
+express对于异步错误无法直接进行捕捉，但是可以在异步内部采用next(err)的方法将错误通过next方法抛出到外部进行捕捉：
+```js
+app.get("/", function (req, res, next) {
+  fs.readFile("/file-does-not-exist", function (err, data) {
+    if (err) {
+      next(err); // Pass errors to Express.
+    }
+    else {
+      res.send(data);
+    }
+  });
+});
+```
+上例中读取文件时，文件不存在的情况下会抛出无法找到文件名的错误，而next方法是在读取文件后将控制权交给其他的中间件处理程序，因为传递了err参数，express将其认为抛出错误，这样就直接进入到错误处理中间栈中了，同样的可以在异步程序内部采用try...catch和promise的catch方法进行错误捕捉，看如下例子：
+**try...catch捕捉错误**
+```js
+app.get("/", function (req, res, next) {
+  setTimeout(function () {
+    try {
+      throw new Error("error happens");
+    }
+    catch (err) {
+      next(err);//next方法抛出错误
+    }
+  }, 100);
+});
+```
+**promise捕捉错误**
+```js
+app.get("/", function (req, res, next) {
+  Promise.resolve().then(function () {
+    throw new Error("error happens");
+  }).catch(next); // catch方法直接传入next方法，next方法会接受到err错误参数
+});
+```
+#### Express链式中间件的错误处理
+当错误发生并使用next抛出时，不会再进行链式程序的余下处理函数，和next('route')不同在于next('route')还会进行其他一般中间件的处理，但是next(err)会跳过直接一般中间件进入到错误中间件。
+```js
+app.get("/", [
+  function (req, res, next) {
+    fs.readFile("/maybe-valid-file", "utf8", function (err, data) {
+        res.locals.data = data;
+        next(err);
+    });
+  },
+  function (req, res) {//该函数会被跳过
+    res.locals.data = res.locals.data.split(",")[1];
+    res.send(res.locals.data);
+  }
+]);
+```
+next(err)抛出错误后余下的程序还是会继续执行，可以理解为中间先插入了错误处理程序的处理，请求完成后任然会执行其余js，而系统抛出的错误则不会再执行错误后面的代码，这个和promise函数的resolve，reject状态修改方法类似。
+```js
+app.get('/', function(req, res, next) {
+    next('cur a error');
+    console.log('after')//程序会执行，打印出after
+})
+>>> after
+```
+```js
+app.get('/', function(req, res, next) {
+	var c = a;
+	console.log('after')//将不会打印after
+})
+>>> 
+```
+#### Express默认错误处理函数
+express内置了一个默认错误处理函数，该函数处于所有中间件的末尾，可以处理任何express内部发生的**同步**错误或者由next(err)抛出的错误处理。
+默认的错误处理函数会将错误信息的**堆栈 error stack trace**返回给客户端,该堆栈只在开发环境有效。
+```js
+//set NODE_ENV=development
+app.get('/', function(req, res, next) {
+	throw new Error('err happens');
+})
+>>> Error: err happens
+    at process.env.PORT (e:\personal-project\website\app.js:36:10)
+    at Layer.handle [as handle_request] (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\layer.js:95:5)
+    at next (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\route.js:137:13)
+    at Route.dispatch (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\route.js:112:3)
+    at Layer.handle [as handle_request] (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\layer.js:95:5)
+    at e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\index.js:281:22
+    at Function.process_params (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\index.js:335:12)
+    at next (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\index.js:275:10)
+    at e:\personal-project\website\app.js:30:3
+    at Layer.handle [as handle_request] (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\layer.js:95:5)
+```
+可以看到默认错误函数返回的信息并不直观，用户很难理解，所以还是需要我们添加一些常用的错误处理函数。
+如果在开始写响应之后调用 next() 时出错（例如，如果在以流式方式将响应传输到客户机时遇到错误），Express 缺省错误处理程序会关闭连接并使请求失败。
+
+因此，在添加定制错误处理程序时，如果头已发送到客户机，您可能希望委托给 Express 中的缺省错误处理机制处理：
+```js
+function errorHandler(err, req, res, next) {
+  if (res.headersSent) {//响应头已经发送，这时候调用默认的错误处理程序会自动关闭tcp连接这或许是我们希望的
+    return next(err);
+  }
+  res.status(500);
+  res.render('error', { error: err });
+}
+
+```
+## 关于js错误
+对于js中的错误处理也只分析到业务层面，深入挖掘还可以延伸到node原生错误处理，koa框架等的错误处理，甚至到js前端监控的研究层面，不多对于错误处理的一些日常应用还是基本都涉及到了，更多的深入研究可以后面再探讨。
+
+
+
 
 
 
