@@ -90,32 +90,59 @@ try {
 }
 ```
 此外，try...catch 无法捕捉语法错误，例如if i=1；因为程序在编译阶段就会发现错误并且停止运行。
-### window.onerror
+### window.onerror 和 window.addEventListener('error', handler, true)
 既然try...catch只能捕捉同步代码错误，那如何能够捕捉或者处理异步函数中的错误呢？
-在浏览器宿主环境中提供了**window.onerror属性**来进行全局的异常监听。
-* 它接受5个参数，错误消息msg,文件file,line错误发生的行数，col错误发生的列数，error 包含错误类型的完整错误消息
-* onerror属性可以return true 来阻止控制台中打印出错误信息。
-* onerror属性同级的代码块中不能出现**语法错误**，否则onerror函数无法执行，也就无法进行错误消息的监听了，解决方法是将window.onerror放到单独的js文件中加载，这样也符合业务分离的原则,但是其必须先与其他业务代码先行加载。
-```javascript
+在浏览器宿主环境中提供了**window.onerror属性**和**window.addEventListener**来进行全局的异常监听。
+* **window.onerror属性**它接受**5**个参数，错误消息msg,文件file,line错误发生的行数，col错误发生的列数，error 包含错误类型的完整错误消息；**window.addEventListener('error', handler, true)** 只有**1**个参数，即发生错误的error对象。
+* **window.onerror**只能捕捉**js产生**的错误；**window.addEventListener**在**捕获**状态（第三个参数为true）能捕捉到js错误，也能捕捉**http资源**加载错误，**冒泡**阶段（第三个参数为false）只能捕获到js错误。
+* 这两种方法都**无法捕捉xhr请求**错误，例如（404）等，也**无法捕捉js动态添加的异步资源请求**，例如`var img = new Image();img.src="a.png"`,这样的错误无法捕捉，查看fundebug控制台发现该平台也同样无法捕获该类型的错误。
+* **onerror**属性可以**return true** 来阻止控制台中打印出错误信息, **window.addEventListener**采用**preventDefault**的方法来阻止控制台打印js错误但是对于资源加载错误无法阻止控制台打印。
+* onerror属性同级的代码块中不能出现**语法错误**，否则onerror函数无法执行，也就无法进行错误消息的监听了，解决方法是将window.onerror放到单独的js文件中加载，这样也符合业务分离的原则,但是其必须先与其他业务代码**先行加载**。
+```js
 window.onerror = function(msg, file, line, col, error) {
-  console.log(msg, file, line, col, error);
-  return true;//控制台将不会输出错误信息
+    console.log(msg, file, line, col, error);
+    return true;//控制台将不会输出错误信息
 }
-if i=0 //语法错误，程序无法执行也无法监控
-或者
-window.addEventListener("error", function(msg, file, line, col, error){
-  ...
-})
-console.log(a)
->>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
-```
-这样很方便我们进行前端数据的监控和上报，配合图片ping的方式进行数据上报
+var c = a;
+<img src="abc.png"/>
 
-```javascript
+>>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
+>>> GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
+```
+上例中的错误会被捕捉，并且由于return true,所以控制台不会打印出错误,图片产生的错误无法捕捉，控制台会将其打印。
+对于图片js,css等**静态资源**请求产生的错误我们可以用window.addEventListener
+```js
+  window.onerror = handleOnError
+  window.addEventListener('error', handleListenerError, true);
+  function handleOnError(errorMessage, scriptURI, lineNumber,columnNumber,errorObj) {
+  　　console.log(msg, file, line, col, error);
+  　　return true // 阻止浏览器console输出
+  }
+  function handleListenerError (eventErr) {
+      console.log(eventErr)
+  　　eventErr.preventDefault() // 阻止浏览器console输出
+  }
+  var a = c;
+  <img src="abc.png"/>
+  <script type="text/javascript" src="abc.js"></script>
+
+  >>> ErrorEvent {isTrusted: true, message: "Uncaught ReferenceError: c is not defined", filename:"file:///C:/Users/Administrator/Desktop/test/index.html", lineno: 15, colno: 11, …}
+  >>> index.html:23 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
+  >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
+  >>> index.html:25 GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
+  >>> index.html:24 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
+  >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
+  >>> index.html:12 Event {isTrusted: true, type: "error", target: img, currentTarget: Window, eventPhase: 1, …}
+```
+其中的error对象如下,包含了我们需要的所有信息：
+![GitHub](error-object.png)
+这样很方便我们进行前端**数据的监控和上报**，配合图片ping的方式进行数据上报
+
+```js
 window.onerror = function(msg, file, line, col, error) {
   console.log(msg, file, line, col, error);
   let upload = new Image();
-  upload.src = 'http://api.upload?msg='+ 'js 发生错误：'+ msg;
+  upload.src = 'http://api.upload?msg='+ 'js 发生错误：'+ msg+ ',行数：'+ line+'：列数：'+ col;
 }
 或者
 window.addEventListener("error", function(msg, file, line, col, error){
@@ -123,8 +150,168 @@ window.addEventListener("error", function(msg, file, line, col, error){
 })
 
 ```
-**非同源（跨域）js导致的error**
-出于安全性的考虑，对于跨域js请求资源内的js报错onerror属性无法获取到全部信息，
+### XMLHttpRequest请求错误的捕捉
+XMLHttpRequest ajax请求对象，对于它内部的捕捉我们可以在业务代码中进行采集。
+```js
+var xhr = new XMLHttpRequest();
+xhr.addEventListener('load', function(e) {
+  if(e.currentTarget.status === '404') {//404错误上报
+    console.log(e.currentTarget.status, e.currentTarget.responseURL);
+  }
+});
+xhr.onreadystatechange = function () {
+  if(xhr.readyState==4) {
+    if(xhr.status == 200) {
+    }
+    else if(xhr.status === 404) {//404错误捕捉
+    }
+  }
+}
+
+xhr.open('GET', '.a.html', true);
+xhr.send();
+```
+上例中发生了一个ajax请求，我们可以监控xhr的onreadystatechange事件当xhr.status状态变为404时，则表示请求404错误，也可以监听load事件，同样可以获取event对象中的e.currentTarget.status进行判断。
+**但是**这些都是业务层面的监听，如何进行全局的监听，例如像[fundebug](https://www.fundebug.com/)或者[sentry](https://sentry.io/welcome/)监控平台一样不做任何业务层的上报，自动全局上报呢，我们可以修改默认的**XMLHttpRequest构造函数**：
+```js
+var originalXml = window.XMLHttpRequest;//保存原始的xml对象
+
+//重写XMLHttpRequest对象，添加自定义监听的readystatechange或load事件进行数据上报。
+window.XMLHttpRequest = function() {
+  var instance = new originalXml();
+  instance.addEventListener('load', function(e) {
+    if(e.currentTarget.status === '404') {//添加额外事件监听进行404错误上报
+      console.log(e.currentTarget.status, e.currentTarget.responseURL);
+    }
+  });
+  instance.addEventListener('readystatechange', function(e) {
+    if(instance.status === '404') {//添加额外事件监听进行404错误上报
+      console.log(e.currentTarget.status, e.currentTarget.responseURL);
+    }
+  });
+  return instance;
+}
+
+//用户自定义的ajax请求，不用做额外的操作即实现了错误数据的采集
+function doAjax() {
+  var xhr = new XMLHttpRequest();
+  xhr.addEventListener('load', function(e) {
+
+  });
+  xhr.onreadystatechange = function () {
+    if(xhr.readyState==4) {
+      if(xhr.status == 200) {
+      }
+      else if(xhr.status === 404) {
+      }
+    }
+  }
+
+  xhr.open('GET', '.a.html', true);
+  xhr.send();
+}
+```
+这样的写法必须保证XMLHttpRequest的重写方法在所有的XMLHttpRequest**实例请求发生之前**,否则错误就无法采集，事实上所有的监控平台代码都**必须先于业务代码**，不然错误就会存在漏采集的情况。
+
+上面的方法其实是一个工厂方法，会重写XMLHttpRequest方法，我们在控制台打印fundebug的XMLHttpRequest
+![GitHub](error-object-2.png)
+可以看到XMLHttpRequest依然是一个native的function，fundebug并没有重写XMLHttpRequest,那么他是如何操作的呢？
+我们可以为onreadystatechange事件添加额外的回调处理函数，直接添加到原型上当然是不行的，
+![GitHub](error-object-3.png)
+国外有小哥[（文章链接）](https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/)为实例中的onreadystatechange事件添加了全局的处理函数
+```js
+var open = window.XMLHttpRequest.prototype.open,  
+    send = window.XMLHttpRequest.prototype.send;//保存原始的open和send方法
+
+function openReplacement(method, url, async, user, password) {  
+  this._url = url;
+  return open.apply(this, arguments);
+}
+
+function sendReplacement(data) {  
+  if(this.onreadystatechange) {
+    this._onreadystatechange = this.onreadystatechange;//保存用户实例中的回调函数onreadystatechange
+  }
+ 
+  console.log('Request sent');
+  
+  this.onreadystatechange = onReadyStateChangeReplacement;//重写回调函数onreadystatechange
+  return send.apply(this, arguments);
+}
+
+function onReadyStateChangeReplacement() {  
+  //这儿可以处理额外添加的处理，例如404上报等,arguments对应onreadystatechange中的event对象
+  //this对应xhr实例，所以可以根据而且来判断404和上报错误消息
+  //console.log(this.status === '404')
+  console.log('Ready state changed to: ', this.readyState);
+  
+  if(this._onreadystatechange) {
+    return this._onreadystatechange.apply(this, arguments);//保存用户实例中的回调函数onreadystatechange
+  }
+}
+
+window.XMLHttpRequest.prototype.open = openReplacement;  
+window.XMLHttpRequest.prototype.send = sendReplacement;
+
+var request = new XMLHttpRequest();
+request.open('GET', '.', true);
+request.send();
+```
+我们可以打印出XMLHttpRequest对象，他是一个原生的native code；说明我们并没有重写XMLHttpRequest对象，只是对其中的方法进行了重写，但是上面的方法还是有缺陷：
+* onreadystatechange的回调函数在send方法调用后才会重写，所以readyState的状态始终是无法捕捉到0（请求）未建立，1（服务器连接建立）的，只能捕获2（请求已接受），3（请求处理中），4（请求已完成，且响应已就绪）。解决办法是将onreadystatechange的回调写法放到open方法前面，这样就能捕捉到为1的服务器连接的状态了。
+* 如果onreadystatechange函数写在send方法后面，那么调用send方法是不能获取到onreadystatechange的回调的，所以这时添加的全局onreadystatechange会被send后用户写的onreadystatechange覆盖掉，解决办法是用addEventListener的方法替代on的绑定方法。
+代码修改如下
+```js
+var open = window.XMLHttpRequest.prototype.open,  
+  send = window.XMLHttpRequest.prototype.send;
+
+function openReplacement(method, url, async, user, password) {  
+  this._url = url;
+  if(this.onreadystatechange) {//将onreadystatechange回调放到open方法前面
+    this._onreadystatechange = this.onreadystatechange;
+  }
+ 
+  console.log('Request sent');
+  //用addEventListener的事件绑定方式代替on
+  this.addEventListener('readystatechange', onReadyStateChangeReplacement, false);
+  return open.apply(this, arguments);
+}
+
+function sendReplacement(data) {  
+  
+  return send.apply(this, arguments);
+}
+
+function onReadyStateChangeReplacement() {  
+  
+  console.log('Ready state changed to: ', this.readyState);
+  console.log(arguments)
+  
+  if(this._onreadystatechange) {
+    return this._onreadystatechange.apply(this, arguments);
+  }
+}
+
+window.XMLHttpRequest.prototype.open = openReplacement;  
+window.XMLHttpRequest.prototype.send = sendReplacement;
+
+var request = new XMLHttpRequest();
+request.onreadystatechange = function () {
+  console.log('===')
+  console.log(request.status)
+    if(request.readyState==4) {
+      if(request.status == 200) {
+      }
+      else if(request.status === 404) {
+      }
+    }
+  }
+request.open('GET', '.', true);
+request.send();
+```
+可将上面代码复制到[jsbin](https://jsbin.com/?js,console)中进行尝试。
+### 非同源（跨域）js导致的error
+出于安全性的考虑，对于**跨域js请求**资源内的js报错onerror属性无法获取到全部信息，
 ```js
 //跨域情况下
 >>> Script error.  0 0 null
@@ -132,8 +319,8 @@ window.addEventListener("error", function(msg, file, line, col, error){
 >>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
 ```
 要想获取到全部信息可以进行如下两个设置：
-* 在服务器端启用允许跨域CORS协议，设置响应头属性Access-Control-Allow-Origin为'*'允许全部域名访问或者允许访问的白名单域名地址；
-* 设置script请求标签头部属性crossorigin，表明该js资源是合法跨域访问的资源，该属性支持anonymous和use-credentials两个value值，不设置情况下默认为anonymous，详细可查看[https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes]
+* 在服务器端启用允许**跨域CORS协议**，设置响应头属性Access-Control-Allow-Origin为'*'允许全部域名访问或者允许访问的白名单域名地址；
+* 设置script请求标签头部属性**crossorigin**，表明该js资源是合法跨域访问的资源，该属性支持anonymous和use-credentials两个value值，不设置情况下默认为anonymous，详细可查看[https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes]
 ```js
 response.writeHead(200, {
     'Content-Type': contentType,
