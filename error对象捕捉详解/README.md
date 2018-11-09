@@ -213,11 +213,11 @@ function doAjax() {
 ```
 这样的写法必须保证XMLHttpRequest的重写方法在所有的XMLHttpRequest**实例请求发生之前**,否则错误就无法采集，事实上所有的监控平台代码都**必须先于业务代码**，不然错误就会存在漏采集的情况。
 
-上面的方法其实是一个工厂方法，会重写XMLHttpRequest方法，我们在控制台打印fundebug的XMLHttpRequest
-![GitHub](error-object-2.png)
+上面的方法其实是一个工厂方法，会重写XMLHttpRequest方法，我们在控制台打印fundebug的XMLHttpRequest   
+![GitHub](error-object-2.png)   
 可以看到XMLHttpRequest依然是一个native的function，fundebug并没有重写XMLHttpRequest,那么他是如何操作的呢？
-我们可以为onreadystatechange事件添加额外的回调处理函数，直接添加到原型上当然是不行的，
-![GitHub](error-object-3.png)
+我们可以为onreadystatechange事件添加额外的回调处理函数，直接添加到原型上当然是不行的，   
+![GitHub](error-object-3.png)   
 国外有小哥[（文章链接）](https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/)为实例中的onreadystatechange事件添加了全局的处理函数
 ```js
 var open = window.XMLHttpRequest.prototype.open,  
