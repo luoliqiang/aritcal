@@ -46,7 +46,7 @@ try {
 catch(e) {
   console.log(e.name);
 }
->>> ReferenceError
+// >>> ReferenceError
 ```
 #### 手动创建error
 通过`new Error()`的方式可以创建自定义错误。
@@ -58,7 +58,7 @@ catch(e) {
   **`lineNumber `** 错误发生的行号（默认为错误发生行号）
 
 例如如下代码为用户自定义错误并且抛出：
-```js
+```js {cmd=node}
 try {
   console.log(a);
 }
@@ -66,7 +66,7 @@ catch (err) {
   //判断错误类型为ReferenceError
   console.log(err instanceof ReferenceError);
 }
->>> true
+// >>> true
 
 try {
   throw new Error("a is not defined"); 
@@ -74,10 +74,10 @@ try {
 catch(e) {
   console.log(e.name + ": " + e.message);
 }
->>> Error: a is not defined
+// >>> Error: a is not defined
 ```
 也可以对error对象进行修改，例如修改name,message等信息，不过修改信息只是该实例上的修改，不会修改原型属性。
-```js
+```js {cmd=node}
 try {
   var e = new Error("a is not defined"); 
   e.message = "message changed"; 
@@ -86,7 +86,7 @@ try {
 catch(e) {
   console.log(e.name + ": " + e.message);
 }
->>> Error: message changed
+// Error: message changed
 ```
 **Error构造函数**
 error构造函数不含有任何的属性和方法,所有的方法和属性都是在**原型链**上进行的继承得到的，可以对其原型链进行方法和属性的**添加**，使得添加的属性和方法在其所有的实例上都生效，但是不得遍历，枚举和重写现有的属性和方法。
@@ -114,7 +114,7 @@ Microsoft含有description错误描述和number错误码，Mozila中含有fileNa
   }
 //采用tostring方法输出错误信息，和e.name+':'+e.message相同
 console.log(err.toString());
->>> c is not defined
+// >>> c is not defined
 ```
 
 更多相关用法参考[https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Error]
@@ -122,7 +122,7 @@ console.log(err.toString());
 当错误发生时，javascript会抛出错误，如果发生同步js错误，由于javascript是单线程所以其程序会挂起，并生成一个错误消息。
 我们可以采用**try...catch**的语法来捕捉错误，将可能发生错误的代码放在try {}语句块中，在catch {}语句块中进行捕捉。
 
-```js
+```js {cmd=node}
 try {
 	//在这里运行代码
 }
@@ -137,10 +137,10 @@ finally {
 ```js
 console.log(a);
 console.log('js will not show this sentence');
->>> Uncaught ReferenceError: a is not defined
+// >>> Uncaught ReferenceError: a is not defined
 ```
 我们可以采用**try...catch**的语法进行错误处理：
-```js
+```js {cmd=node}
 try {
   console.log(a);
   console.log('js will not show this sentence');
@@ -149,7 +149,7 @@ catch (err) {
   console.log(err);
 }
 console.log('js still work here');
->>> this is the error msg:ReferenceError: a is not defined
+// >>> this is the error msg:ReferenceError: a is not defined
     js still work here
 ```
 try...catch总是**成对**出现，如果只有try而没有catch程序会抛出错误
@@ -157,10 +157,10 @@ try...catch总是**成对**出现，如果只有try而没有catch程序会抛出
 try {
   console.log(a);
 }
->>> Uncaught SyntaxError: Missing catch or finally after try
+// >>> Uncaught SyntaxError: Missing catch or finally after try
 ```
 **try...catch只能捕捉同步执行代码的错误**，对于异步执行的代码无法捕捉，考虑如下代码：
-```js
+```js {cmd=node}
 try {
   setTimeout(function() {
     console.log(a);
@@ -169,10 +169,10 @@ try {
 catch (err) {
     console.log(err)
 }
->>> Uncaught ReferenceError: a is not defined
+// >>> Uncaught ReferenceError: a is not defined
 ```
 同理ajax的错误捕捉也是无效的：
-```js
+```js {cmd=node}
 try {
 	request(url, function(error, response, body) {
 		if (!error && response.statusCode == 200) {
@@ -205,7 +205,7 @@ try {
 * 同样**无法捕捉xhr请求**错误，例如（404）等，也**无法捕捉js动态添加的异步资源请求**，例如`var img = new Image();img.src="a.png"`,这样的错误无法捕捉，查看fundebug控制台发现该平台也同样无法捕获该类型的错误。
 * 采用**preventDefault**的方法来阻止控制台打印js错误但是对于资源加载错误无法阻止控制台打印。
 * window.addEventListener属性同级的代码块中不能出现**语法错误**，否则onerror函数无法执行，也就无法进行错误消息的监听了，解决方法是将window.onerror放到单独的js文件中加载，这样也符合业务分离的原则,但是其必须先与其他业务代码**先行加载**。
-```js
+```js {cmd=node}
 window.onerror = function(msg, file, line, col, error) {
     console.log(msg, file, line, col, error);
     return true;//控制台将不会输出错误信息
@@ -213,13 +213,13 @@ window.onerror = function(msg, file, line, col, error) {
 var c = a;
 <img src="abc.png"/>
 
->>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
->>> GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
+// >>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
+// >>> GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
 ```
 上例中的错误会被捕捉，并且由于return true,所以控制台不会打印出错误,
 图片产生的错误无法捕捉，控制台会将其打印。
 对于图片js,css等**静态资源**请求产生的错误我们可以用window.addEventListener
-```js
+```js {cmd=node}
   window.onerror = handleOnError
   window.addEventListener('error', handleListenerError, true);
   function handleOnError(errorMessage, scriptURI, lineNumber,columnNumber,errorObj) {
@@ -234,19 +234,19 @@ var c = a;
   <img src="abc.png"/>
   <script type="text/javascript" src="abc.js"></script>
 
-  >>> ErrorEvent {isTrusted: true, message: "Uncaught ReferenceError: c is not defined", filename:"file:///C:/Users/Administrator/Desktop/test/index.html", lineno: 15, colno: 11, …}
-  >>> index.html:23 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
-  >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
-  >>> index.html:25 GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
-  >>> index.html:24 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
-  >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
-  >>> index.html:12 Event {isTrusted: true, type: "error", target: img, currentTarget: Window, eventPhase: 1, …}
+  // >>> ErrorEvent {isTrusted: true, message: "Uncaught ReferenceError: c is not defined", filename:"file:///C:/Users/Administrator/Desktop/test/index.html", lineno: 15, colno: 11, …}
+  // >>> index.html:23 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
+  // >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
+  // >>> index.html:25 GET file:///C:/Users/Administrator/Desktop/test/abc.png 0 ()
+  // >>> index.html:24 GET file:///C:/Users/Administrator/Desktop/test/abc.js 0 ()
+  // >>> index.html:12 Event {isTrusted: true, type: "error", target: script, currentTarget: Window, eventPhase: 1, …}
+  // >>> index.html:12 Event {isTrusted: true, type: "error", target: img, currentTarget: Window, eventPhase: 1, …}
 ```
 其中的error对象如下,包含了我们需要的所有信息：
 ![GitHub](error-object.png)
 这样很方便我们进行前端**数据的监控和上报**，配合图片ping的方式进行数据上报
 
-```js
+```js {cmd=node}
 window.onerror = function(msg, file, line, col, error) {
   console.log(msg, file, line, col, error);
   let upload = new Image();
@@ -262,7 +262,7 @@ window.addEventListener("error", function(msg, file, line, col, error){
 我们一般也将XMLHttpRequest请求的`非成功状态码（200）`之外的状态归结为错误，也希望对其进行捕捉和监控，
 但是由于异步的特性，`try...catch`无法进行捕捉，并且XMLHttpRequest错误不同于`静态资源文件加载错误`，也不具有`冒泡和可捕获`的性质，无法进行全局错误捕捉，事实上**js手动发起的资源加载和XML错误**我们都无法进行全局捕获，也无法产生自动的error对象实例。
 不过对于js发起的资源加载例如`var img = new Image();img.src="..."`和XML请求js都提供了对应的回调load和error事件，对于它内部的捕捉我们可以在业务代码中进行采集。
-```js
+```js {cmd=node}
 var xhr = new XMLHttpRequest();
 xhr.addEventListener('load', function(e) {
   if(e.currentTarget.status === '404') {//404错误上报
@@ -284,7 +284,7 @@ xhr.send();
 上例中发生了一个ajax请求，我们可以监控xhr的onreadystatechange事件当xhr.status状态变为404时，则表示请求404错误，也可以监听load事件，同样可以获取event对象中的e.currentTarget.status进行判断。
 
 **但是**这些都是业务层面的监听，如何进行全局的监听，例如像[fundebug](https://www.fundebug.com/)或者[sentry](https://sentry.io/welcome/)监控平台一样不做任何业务层的上报，自动全局上报呢，我们可以修改默认的**XMLHttpRequest构造函数**：
-```js
+```js {cmd=node}
 var originalXml = window.XMLHttpRequest;//保存原始的xml对象
 
 //重写XMLHttpRequest对象，添加自定义监听的readystatechange或load事件进行数据上报。
@@ -330,7 +330,7 @@ function doAjax() {
 我们可以为onreadystatechange事件添加额外的回调处理函数，直接添加到原型上当然是不行的，   
 ![GitHub](error-object-3.png)   
 国外有小哥[（文章链接）](https://dmitripavlutin.com/catch-the-xmlhttp-request-in-plain-javascript/)为实例中的onreadystatechange事件添加了全局的处理函数
-```js
+```js {cmd=node}
 var open = window.XMLHttpRequest.prototype.open,  
     send = window.XMLHttpRequest.prototype.send;//保存原始的open和send方法
 
@@ -372,7 +372,7 @@ request.send();
 * onreadystatechange的回调函数在send方法调用后才会重写，所以readyState的状态始终是无法捕捉到0（请求）未建立，1（服务器连接建立）的，只能捕获2（请求已接受），3（请求处理中），4（请求已完成，且响应已就绪）。解决办法是将onreadystatechange的回调写法放到open方法前面，这样就能捕捉到为1的服务器连接的状态了。
 * 如果onreadystatechange函数写在send方法后面，那么调用send方法是不能获取到onreadystatechange的回调的，所以这时添加的全局onreadystatechange会被send后用户写的onreadystatechange覆盖掉，解决办法是用addEventListener的方法替代on的绑定方法。
 代码修改如下
-```js
+```js {cmd=node}
 var open = window.XMLHttpRequest.prototype.open,  
   send = window.XMLHttpRequest.prototype.send;
 
@@ -424,16 +424,16 @@ request.send();
 ## <span id="sec6"> 非同源（跨域）js导致的error</span>
 出于安全性的考虑，对于**跨域js请求**资源内的js报错onerror属性无法获取到全部信息，可以[查看MSN的解释](https://developer.mozilla.org/zh-CN/docs/Web/API/GlobalEventHandlers/onerror);
 一种做法是采取变通方案，该跨域类型会返回一个`Script error.`的错误字符串，可对其进行判断，给用户友好提示。
-```js
+```js {cmd=node}
 //跨域情况下
->>> Script error.  0 0 null
+// >>> Script error.  0 0 null
 //非跨域情况下
->>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
+// >>> a is not defined http://10.34.43.54:3000/test.js 7 17 ReferenceError: a is not defined
 ```
 或者要想获取到全部信息可以进行如下两个设置：
 * 在服务器端启用允许**跨域CORS协议**，设置响应头属性Access-Control-Allow-Origin为'*'允许全部域名访问或者允许访问的白名单域名地址；
 * 设置script请求标签头部属性**crossorigin**，表明该js资源是合法跨域访问的资源，该属性支持anonymous和use-credentials两个value值，不设置情况下默认为anonymous，详细可查看[https://developer.mozilla.org/en-US/docs/Web/HTML/CORS_settings_attributes]
-```js
+```js {cmd=node}
 response.writeHead(200, {
     'Content-Type': contentType,
     'Access-Control-Allow-Origin': '*'
@@ -442,7 +442,7 @@ response.writeHead(200, {
 ```
 ## <span id="sec7"> promise函数中的错误捕捉</span>
 首先来看一下一个简单的promise对象实现如下：
-```js
+```js {cmd=node}
 function Promise(cb) {
   this.status = 'pending';
   try {
@@ -479,7 +479,7 @@ Promise.prototype.catch = function(cbCatch) {
 
 ```
 以上为一个promise构造函数的简单实现，我们可以对其进行调用如下：
-```js
+```js {cmd=node}
 new Promise(function(resolve, reject) {
   //耗时的操作
   resolve();
@@ -498,7 +498,7 @@ new Promise(function(resolve, reject) {
 * then方法中接受两个函数其中第一个函数为状态变为resolve时的回调函数，第二个为状态变为rejected时的回调函数，如果* * promise状态变更为rejected那么将不会进入到接下来的任何then方法中的第一个函数，如果该then方法没有提供reject的回调，那么promise将会一直向下寻找直到找到最近的reject回调
 
 看下面例子
-```js
+```js {cmd=node}
 new Promise(function(resolve, reject) {
   //耗时的操作
   reject();
@@ -520,8 +520,8 @@ new Promise(function(resolve, reject) {
   console.log('error msg:'+ err);
 })
 
->>> promise instance rejected1
->>> promise instance resolved3
+// >>> promise instance rejected1
+// >>> promise instance resolved3
 ```
 上例中promise对象的状态被更改为了rejected所以第一个then回调中没有对应的reject回调进行捕捉，将会进入到第二个then方法的reject回调中，该reject回调中并未有任何返回值，所以其reject被处理后会进入到then方法的resolve回调中
 
@@ -532,7 +532,7 @@ javascript原生实现了promise对象，其内部一共有**pending**（进行�
 promise函数的错误`无法用try...catch在外部进行捕捉`，因为promise函数虽然在初始化话的时候回立即执行，但是其返回结果会放入到`microtask对象的执行队列`，该队列会在主程序末尾执行(区别于setimeout的macrotask队列,该队列会在下一次任务循环进行，所以microtask会先于macrotasks任务执行)，所以抛出的错误此时的执行环境以及不在try...catch的同步语句中了，所以无法捕捉。
 #### Promise.all中的错误处理
 Promise.all会依次行参数数组内的所有promise对象，如果不是promise对象，会先调用promise.resolve进行转换；如果所有对象没有错误或者reject或者所有错误都被捕捉那么promise.all的状态会变为resolved,如果有错误或reject未捕捉那么其产生的第一个错误对象会被promise.all中的catch捕捉到，看下面例子：
-```js
+```js {cmd=node}
 var f1 = new Promise(function() {
 	throw new Error('error 1 inner');
 })
@@ -563,16 +563,16 @@ Promise.all([f1, f2, f3, f4]).then(function() {
 	console.log(err+ ' outer');
 });
 
->>> enter f4
->>> error 1 inner
->>> error 3 inner
->>> error 2 inner outer
+// >>> enter f4
+// >>> error 1 inner
+// >>> error 3 inner
+// >>> error 2 inner outer
 ```
 上面的f2函数的错误并没有被捕捉，所以导致整个promise.all的状态变为rejected,由于f1和f3中的错误都被自身捕捉了，不会进入到promise.all中，所以只有f2和f4中的错误会被捕捉，返回值中第一个错误f2中的错误。
 第一个输出为f4中的console.log是因为promise函数会被立即执行，但是then和catch的回调会被存放到microtasks队列中，该队列会添加到当前主程序的末尾，macrotasks的前面执行，所以会先输出"enter f4",再输出错误。
 
 promise内部状态改变后并`不影响其后面语句的执行，并且会先于then回调方法执行`，但是如果再后面再抛出错误，将无法捕获并且不会冒泡到window错误中去,错误后面的代码也无法执行了；如果后面再进行状态更改也是无效的，状态是不可逆的。
-```js
+```js {cmd=node}
 var promise=new Promise(function(resolve,reject){
    resolve();
    console.log(1)
@@ -587,15 +587,15 @@ promise.then(function(){
   console.log(e)
 })
 
->>> 1
->>> 2
->>> resolved
+// >>> 1
+// >>> 2
+// >>> resolved
 ```
 上面程序执行后先执行了promise中的程序，遇到resolve后状态凝固了，然后将then中的回调函数推入到主程序末尾的microtasks中，接下来执行主程序后面的语句打印出1；接来下遇到reject状态也不会改变了，再遇到error后程序停止运行，接下来执行microtasks中的任务，打印出“resolved”，程序执行完毕。
 
 ## <span id="sec8">async函数的错误捕捉</span>
 async 函数时ES2017标准引入的，是Genertor函数的语法糖；async函数的返回值是promise对象，所以其对于错误的处理和一般promise的方式类似；可以用then方法指定resolve和reject回调，也可以使用catch方法进行错误兜底。
-```js
+```js {cmd=node}
 async function getGoods() {
 	const goodsName = await getGoodsName();
 	const goodsList = await getGoodsList(goodsName);
@@ -617,8 +617,8 @@ getError().then().catch(function(err) {
 	console.log(err)
 });
 
->>> Error: error happens
-```
+// >>> Error: error happens
+``` 
 async函数返回的promise对象会在函数体内所有语句（包括同步和异步语句）执行完成成才会发生状态的转换，除非遇到return语句或者程序抛出错误，promise状态就会立即发生改变然后执行then方法中的回调，这当中包括以下几种情况：
 * 程序遇到return语句
 * 同步语句发生错误或者手动抛出errow错误
@@ -626,7 +626,7 @@ async函数返回的promise对象会在函数体内所有语句（包括同步�
 
 从第3中情形可以看到，如果await语句后的异步程序发生错误，则整个async函数会停止运行，直接状态变成rejected,由于在书写代码的时候同步代码产生的错误很容易排查，但是异步程序产生的错误情况复杂不太容易发现，（比如一个ajax请求导致的错误等），如果整个async函数停止运行肯定是我们不期望看到的，我们希望即使前一个异步操作失败也不影响到后面的异步操作。所以必须对其进行错误捕捉：
 我们可以对await后面的promise对象进行catch方法的捕捉
-```js
+```js {cmd=node}
 	async function getGoodsName() {
 		throw new Error('error happens inside');
 	}
@@ -652,11 +652,11 @@ async函数返回的promise对象会在函数体内所有语句（包括同步�
 			console.log('error happens outside');
 		});
 	
-	>>> Error: error happens inside
-    >>> resolved
+	// >>> Error: error happens inside
+    // >>> resolved
 ```
 async 函数内部wait后面的异步语句不会加入到**microtask的事件队列**中去，可以看做始终处在async函数内部，而不像一般的异步函数会推入到事件循环中，其执行环境是window对象；么它抛出的错误程序会从异步程序冒泡到外层的await语句所在的语句块,所以也可以用**try...catch**的方式进行捕捉,如果不捕捉那么将会冒泡到async函数最外层的catch方法。
-```js
+```js {cmd=node}
 	async function getGoodsName() {
 		throw new Error('error happens inside');
 	}
@@ -683,11 +683,11 @@ async 函数内部wait后面的异步语句不会加入到**microtask的事件�
 			console.log('error happens outside');
 		});
 	
-	>>> Error: error happens inside
-    >>> resolved
+	// >>> Error: error happens inside
+    // >>> resolved
 ```
 如果有多个await语句可以采用最外层包裹try...catch的方式，这样就不用每一个await语句都进行错误处理了，即使报错程序依然会进入到async外围的then函数中的resolve回调中，所以我们经常看到这样的写法：
-```js
+```js {cmd=node}
 	async function getGoods() {
 		try {
 			const goodsName = await getGoodsName();
@@ -707,7 +707,7 @@ async 函数内部wait后面的异步语句不会加入到**microtask的事件�
 			console.log('error happens outside');
 		});
 
-	>>> resolved
+	// >>> resolved
 ```
 <span id="sec9">Generator函数中的错误捕捉</span>
 **Generator.prototype.throw**
@@ -738,7 +738,7 @@ catch(err) {
 }
 ```
 throw方法抛出的错误如果要被内部捕获，至少要执行过一次next方法，否则内部无法捕捉错误，相当于内部程序还未开始运行。
-```js
+```js {cmd=node}
 var f = function* () {
 	try {
 		yield;
@@ -752,7 +752,7 @@ var step = f();
 step.next();
 step.throw('error happened');
 
->>> Uncaught error happened
+// >>> Uncaught error happened
 ```
 throw语句错误被捕获后程序会接着向下执行，相当于它是一次错误类型的next语句执行，如果错误被catch了则会继续执行下面语句，如果错误并没有被catch那么该函数体内的语句不会再执行了，任何时候调用next都会返回`{value: undefined, done: true}`，javascript认为函数体已经运行结束了。
 ```js {cmd="node"}
@@ -773,14 +773,14 @@ catch(err) {
 console.log(step.next());
 console.log(step.next());
 
->>> error happened
->>> { value: undefined, done: true }
->>> { value: undefined, done: true }
+// >>> error happened
+// >>> { value: undefined, done: true }
+// >>> { value: undefined, done: true }
 ```
 ## <span id="sec10">Express中的错误捕捉</span>
 express框架是最流行的的nodejs服务器框架，框架对于请求的处理由一个个的中间件组成，中间件安装顺序依次往下执行，执行的切换交给**next**方法进行传递。
 一个简单的express服务器示例如下
-```js
+```js {cmd=node}
 var createError = require('http-errors');
 var express = require('express');
 
@@ -805,15 +805,15 @@ app.get('/list', function(req, res, next) {
 process.env.PORT = '80';//设置端口为80
 module.exports = app;
 
->>> enter root router
->>> enter list router
+// >>> enter root router
+// >>> enter list router
 ```
 * 中间件可以简单区分为**路由中间件**和一般的**方法处理中间件**。
 * 每个中间件接受**3**个或者**4**个参数，express内部有判断机制，如果中间件的参数为3个则认为是**正常处理中间件**为4个则认为是**错误处理中间件**；3个参数依次为**request,response,next**;4个参数为**err,request,response,next**。
 * 错误可以系统抛出也可以手动抛出，手动抛出方法是对next方法添加参数，express会认为是抛出错误，例如`next(new Error('err happens'))`，参数可以是**route**字符串以外的任何布尔值为true的数据类型，因为在**路由中间件**中'route'代表跳过当前路由余下的处理程序。
 * 当错误发生时，会跳过中间件栈中的其余剩下的正常处理中间件而直接进入到错误中间件队列，依次处理错误，如果错误处理中间件中并没有response回错误信息，那么错误最终会进入到兜底的错误处理程序，会返回客户端默认的错误堆栈信息。
 * 错误处理程序一般放在最后，可以添加多个错误处理程序。
-```js
+```js {cmd=node}
 app.get('/', function(req, res, next) {
 	var c = a+1;//a变量未定义，会抛出错误
 	next();
@@ -834,18 +834,18 @@ app.use(function(err, req, res, next) {
 });
 ```
 上例中变量 a 未定义，所以抛出错误,程序会跳过所有的一般中间件而进入到错误处理程序中,再通过next传递到下一个错误处理中间件，这样的话我们可以为程序`添加不同的错误处理中间件来满足不同的错误处理需求`，例如可以对错误日志进行收集等。
-```js
+```js {cmd=node}
 app.use(logErrors)
 app.use(clientErrorHandler)
 app.use(errorHandler)
 ```
-```js
+```js {cmd=node}
 function logErrors (err, req, res, next) {
   console.error(err.stack)//对错误日志进行打印
   next(err)
 }
 ```
-```js
+```js {cmd=node}
 function clientErrorHandler (err, req, res, next) {
   if (req.xhr) {
     res.status(500).send({ error: 'Something failed!' })
@@ -854,7 +854,7 @@ function clientErrorHandler (err, req, res, next) {
   }
 }
 ```
-```js
+```js {cmd=node}
 function errorHandler (err, req, res, next) {
   res.status(500)//以上没有response的错误都会进入到该错误
   res.render('error', { error: err })
@@ -862,7 +862,7 @@ function errorHandler (err, req, res, next) {
 ```
 #### Express中的404错误
 404本身不是错误请求，只是请求地址没有找到对应的路由，一般在程序的的最后面加上兜底的404处理中间件就行了,这样未进入到任何路由的请求会走到该中间件来。
-```js
+```js {cmd=node}
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
 	res.status = 404;
@@ -871,7 +871,7 @@ app.use(function(req, res, next) {
 ```
 #### Express中的异步错误
 express对于异步错误无法直接进行捕捉，但是可以在异步内部采用next(err)的方法将错误通过next方法抛出到外部进行捕捉：
-```js
+```js {cmd=node}
 app.get("/", function (req, res, next) {
   fs.readFile("/file-does-not-exist", function (err, data) {
     if (err) {
@@ -885,7 +885,7 @@ app.get("/", function (req, res, next) {
 ```
 上例中读取文件时，文件不存在的情况下会抛出无法找到文件名的错误，而next方法是在读取文件后将控制权交给其他的中间件处理程序，因为传递了err参数，express将其认为抛出错误，这样就直接进入到错误处理中间栈中了，同样的可以在异步程序内部采用try...catch和promise的catch方法进行错误捕捉，看如下例子：
 **try...catch捕捉错误**
-```js
+```js {cmd=node}
 app.get("/", function (req, res, next) {
   setTimeout(function () {
     try {
@@ -898,7 +898,7 @@ app.get("/", function (req, res, next) {
 });
 ```
 **promise捕捉错误**
-```js
+```js {cmd=node}
 app.get("/", function (req, res, next) {
   Promise.resolve().then(function () {
     throw new Error("error happens");
@@ -907,7 +907,7 @@ app.get("/", function (req, res, next) {
 ```
 #### Express链式中间件的错误处理
 当错误发生并使用next抛出时，不会再进行链式程序的余下处理函数，和next('route')不同在于next('route')还会进行其他一般中间件的处理，但是next(err)会跳过直接一般中间件进入到错误中间件。
-```js
+```js {cmd=node}
 app.get("/", [
   function (req, res, next) {
     fs.readFile("/maybe-valid-file", "utf8", function (err, data) {
@@ -922,29 +922,29 @@ app.get("/", [
 ]);
 ```
 next(err)抛出错误后余下的程序还是会继续执行，可以理解为中间先插入了错误处理程序的处理，请求完成后任然会执行其余js，而系统抛出的错误则不会再执行错误后面的代码，这个和promise函数的resolve，reject状态修改方法类似。
-```js
+```js {cmd=node}
 app.get('/', function(req, res, next) {
     next('cur a error');
     console.log('after')//程序会执行，打印出after
 })
->>> after
+// >>> after
 ```
-```js
+```js {cmd=node}
 app.get('/', function(req, res, next) {
 	var c = a;
 	console.log('after')//将不会打印after
 })
->>> 
+// >>> 
 ```
 #### Express默认错误处理函数
 express内置了一个默认错误处理函数，该函数处于所有中间件的末尾，可以处理任何express内部发生的**同步**错误或者由next(err)抛出的错误处理。
 默认的错误处理函数会将错误信息的**堆栈 error stack trace**返回给客户端,该堆栈只在开发环境有效。
-```js
+```js {cmd=node}
 //set NODE_ENV=development
 app.get('/', function(req, res, next) {
 	throw new Error('err happens');
 })
->>> Error: err happens
+// >>> Error: err happens
     at process.env.PORT (e:\personal-project\website\app.js:36:10)
     at Layer.handle [as handle_request] (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\layer.js:95:5)
     at next (e:\personal-project\website\node_modules\_express@4.16.4@express\lib\router\route.js:137:13)
@@ -960,7 +960,7 @@ app.get('/', function(req, res, next) {
 如果在开始写响应之后调用 next() 时出错（例如，如果在以流式方式将响应传输到客户机时遇到错误），Express 缺省错误处理程序会关闭连接并使请求失败。
 
 因此，在添加定制错误处理程序时，如果头已发送到客户机，您可能希望委托给 Express 中的缺省错误处理机制处理：
-```js
+```js {cmd=node}
 function errorHandler(err, req, res, next) {
   if (res.headersSent) {//响应头已经发送，这时候调用默认的错误处理程序会自动关闭tcp连接这或许是我们希望的
     return next(err);

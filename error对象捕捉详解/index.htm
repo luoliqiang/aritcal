@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>跨域js访问</title>
+	<script>
+		window.onerror = function(msg, file, line, col, error) {
+		    console.log(msg, file, line, col, error);
+		    return true;//控制台将不会输出错误信息
+		}
+	</script>
+</head>
+<body>
+	跨域js访问
+	<script src="http://10.34.41.103:3001/error.js" crossorigin="anonymous"></script>
+	<!-- <script src="http://10.34.41.103:3001/error.js" crossorigin="anonymous"></script> -->
+</body>
+</html>
