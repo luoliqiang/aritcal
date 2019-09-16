@@ -1,4 +1,4 @@
-# css动画优化
+# css动画优化
 ## 前言
 在现代的web开发中，css3动画是一个很常用的功能了，经常用到的就是**transition**变化和**animate**动画，二者可以替代以前的dom操作元素变化来达到动画的目的，可谓是大大提高了web前端的动画生产力，不过我们在使用中或许鲜有了解其性能，只是在一些h5中会发现出现一些**卡顿和掉帧**的现象，多半也就归结为移动端性能差，没有究其根本。
 
@@ -46,7 +46,87 @@ chrome浏览器调试工具为我们提供了性能相关的调试功能，打�
   * css不会阻塞dom树的解析，只是会影响渲染树的生成。
   * js的加载要依赖于**渲染树**，这是因为js中有可能去获取css的样式js标签之前如果有css，会等待css加载完成再生成dom，并且js会阻塞dom数的渲染。
 
+<<<<<<< HEAD
   所以我们通常的做法将css放在顶部作用在于避免dom加载样式错乱，加快css的加载速度避免阻塞css阻塞；将js放在底部作用在于避免dom的阻塞，而且js始终需要等待css的加载完成，所以放在下面会减少一个dom渲染的时间，而且浏览器会提前预加载资源。
+=======
+  所以我们通常的做法将css放在顶部作用在于避免dom加载样式错乱，加快css的加载速度避免阻塞css阻塞；将js放在底部作用在于避免dom的阻塞，而且js始终需要等待css的加载完成，所以放在下面会减少一个dom渲染的时间，而且浏览器会提前预加载资源。
+
+  #### html的重绘和重排
+  上面的浏览器渲染流程图可以看到dom树先进行了排序，即对整个文档dom树的各个元素的宽高，距离等进行了计算，然后对其在屏幕上进行了绘制，如果我们对dom进行操作，那么势必会影响到dom的重拍和重绘，进而影响到性能问题。
+
+**常见的重排**：
+
+* 添加或者删除可见的元素
+* 元素位置改变
+* 元素尺寸改变
+* 元素内容改变
+* 页面渲染初始化
+* 浏览器窗口发生变化
+
+常见的浏览器窗口发生变化我们都要进行防抖函数的编写来避免频繁操作dom,节约性能
+
+```js
+
+function debounce(fun, interval) {
+  var timer = null;
+
+  return function() {
+    let self = this,//保持this指向dom对象
+        args = arguments;
+
+    clearTimeout(timer);
+    timer = null;
+    timer = setTimeout(function() {
+      fun.apply(self, args);
+    }, interval);
+  }
+}
+
+var scroll_fun = debounce(function() {
+  let scrollTop = document.body.scrollTop || document.documentElement.scrollTop;
+    console.log('滚动条位置：' + scrollTop);
+}, 300);
+
+window.addEventlistener('scroll', scroll_fun);
+```
+**函数防抖**的作用是用在例如window.onscroll等频繁触发的事件上，让函数在最近的事件等待多少时间后触发，如果有重复事件则清除当前纪时，简单点讲就是**频繁触发的事件停下来等待指定时间后再触发事件函数**
+
+除了函数防抖还有一个常用的方法是**函数截流**，函数截流是指函数在固定的间隔时间触发。比如滚动懒加载的图片，如果用户一致滚动页面，那么便会不断触发滚动事件，这时候的防抖函数始终不会触发，所以需要让事件函数在执行完成后多少时间后才能继续触发，这就是**函数截流**了。
+```js
+
+function throtte(fun, time, delay) {
+  var t_last = +new Date();
+  var timer;
+  return function loop () {
+    let self = this,//保持this指向dom对象
+        args = arguments;
+    
+    let t = +new Date();
+    if(t - t_last > time) {
+      fun.apply(self, args);
+    }
+    else {
+      clearTimeout(timer);
+      timer = null;
+      timer = setTimeout(function() {
+        loop.apply(self, args);
+      }, delay);
+    }
+  }
+}
+
+var scroll_fun = throtte(function() {
+  console.log('fun start');
+}, 300, 50);
+
+window.addEventlistener('scroll', scroll_fun);
+```
+以上二者都能防止函数过于频繁的调用。
+区别在于，当事件持续被触发，如果触发时间间隔短于规定的等待时间（n秒），那么
+
+* 函数防抖的情况下，函数将一直推迟执行，造成**不会被执行**的效果；
+* 函数节流的情况下，函数将**每个 n 秒**执行一次。
+>>>>>>> 776f3a33870d43d6b10211b5693ba2e4fd366938
 
   我们可以使用script标签的**defer**属性和**async**属性来解决js加载阻塞渲染的问题，前者是在页面解析完毕后**DOMContentLoaded之前执行**也就是在页面dom加载完成且图片等静态资源还未加载时进行立即进行，html5规范要求脚本执行应该按照脚本出现的先后顺序执行，但实际情况下，延迟脚本不一定按照先后顺序执行，async的js在下载完后会立即执行在下载完成后会立即执行，因此后加载的脚本也有可能先执行。
 ```js
