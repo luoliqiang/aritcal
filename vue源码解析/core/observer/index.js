@@ -140,6 +140,7 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 每个属性都在内部维护一个Dep的闭包对象，可以往该对象中添加防范回调等
   const dep = new Dep()
   // configurable不可重新定义,Object.getOwnPropertyDescriptor获取对象描述信息value writable get set configurable enumerable，可以获取geter和seter函数
   const property = Object.getOwnPropertyDescriptor(obj, key)
@@ -159,8 +160,10 @@ export function defineReactive (
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
+      // 如果该属性原来有getter则继承执行该getter,让该getter返回val;否则返回val
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
+        // dep.depend会将dep对象自身添加到Dep.target中
         dep.depend()
         if (childOb) {
           childOb.dep.depend()
