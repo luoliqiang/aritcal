@@ -76,9 +76,12 @@ export default class Watcher {
       ? expOrFn.toString()
       : ''
     // parse expression for getter
+    // getter为该key值对应的数据的getter，始终会转换成一个函数
     if (typeof expOrFn === 'function') {
       this.getter = expOrFn
     } else {
+      // parsePath返回一个getter函数，会将含有命名空间的expOrFn返回确定的值
+      // this.getter.call(vm, vm)会在传入的vm中取得vm[expOrFn]的value值
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
@@ -103,6 +106,7 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
+      // 调用一次getter，会在传入的vm中取得vm[expOrFn]的value值，就会触发该value值的getter，继而触发dep对象的addSub方法
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {

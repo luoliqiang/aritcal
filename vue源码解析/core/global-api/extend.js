@@ -18,8 +18,9 @@ export function initExtend (Vue: GlobalAPI) {
    */
   Vue.extend = function (extendOptions: Object): Function {
     extendOptions = extendOptions || {}
-    const Super = this
+    const Super = this // Vue
     const SuperId = Super.cid
+    // 有缓存的构造函数则直接返回
     const cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {})
     if (cachedCtors[SuperId]) {
       return cachedCtors[SuperId]
@@ -29,17 +30,20 @@ export function initExtend (Vue: GlobalAPI) {
     if (process.env.NODE_ENV !== 'production' && name) {
       validateComponentName(name)
     }
-
+    // 工厂方法，返回调用vue初始化函数_init方法
     const Sub = function VueComponent (options) {
       this._init(options)
     }
+    // 继承Vue.prototype
     Sub.prototype = Object.create(Super.prototype)
     Sub.prototype.constructor = Sub
     Sub.cid = cid++
+    // options将会合并父options和传入的extendOptions，所以会具有根实例的options上的方法_base，components,filters,KeepAlive，钩子函数以及全局mixin进来的方法
     Sub.options = mergeOptions(
       Super.options,
       extendOptions
     )
+    // 指定父元素为Vue
     Sub['super'] = Super
 
     // For props and computed properties, we define the proxy getters on
@@ -80,9 +84,11 @@ export function initExtend (Vue: GlobalAPI) {
   }
 }
 
-function initProps (Comp) {
+function initProps (Comp) { // Comp = Sub
   const props = Comp.options.props
   for (const key in props) {
+    // 定义所有的props的取值都代理到Comp.prototype对象上，再由Comp.prototype去vue._props[key]上去取值
+    // 这样就只需要在Comp.prototype上做一次代理
     proxy(Comp.prototype, `_props`, key)
   }
 }

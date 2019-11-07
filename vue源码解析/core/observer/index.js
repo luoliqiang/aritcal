@@ -41,15 +41,30 @@ export class Observer {
 
   constructor (value: any) {
     this.value = value
+    // 创一个dep观察者实例
     this.dep = new Dep()
     this.vmCount = 0
+    // 使用defineproperty将__ob__定义在value对象上，__ob__的值是this,即为该observer实例
+    /**
+     * Object.defineProperty(obj, key, {
+        value: val,
+        enumerable: !!enumerable,
+        writable: true,
+        configurable: true
+      })
+     */
     def(value, '__ob__', this)
+    // 让value继承Array的属性
     if (Array.isArray(value)) {
       if (hasProto) {
+        // arrayMethods=Object.create(Array.prototype)
+        // vaule.__proto__ = Object.create(Array.prototype) value继承自数组，但是不具有数组的length，是对象，设置arrp[0] = 9的时候其实设置的是属性0，
         protoAugment(value, arrayMethods)
       } else {
+        // arrayKeys = Object.getOwnPropertyNames(arrayMethods)
         copyAugment(value, arrayMethods, arrayKeys)
       }
+      // 观察数组，如果数组值为简单值则不观察，无法设置getter,setter,而如果是数组对象，则观察里面的对象
       this.observeArray(value)
     } else {
       this.walk(value)
@@ -70,6 +85,7 @@ export class Observer {
 
   /**
    * Observe a list of Array items.
+   * 数组里面的值的类型如果是对象则进行观察，否则无法观察
    */
   observeArray (items: Array<any>) {
     for (let i = 0, l = items.length; i < l; i++) {
@@ -107,6 +123,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
+// 创建一个Observer的实例，即将一个对象数据转换成带有__ob__属性的getter和setter的数据劫持对象
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
     return
@@ -119,7 +136,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
     Object.isExtensible(value) &&
-    !value._isVue
+    !value._isVue // 非vue实例或根元素
   ) {
     ob = new Observer(value)
   }
@@ -237,6 +254,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
   }
   // 是响应对象，则添加值且响应
   defineReactive(ob.value, key, val)
+  // 更新该对象相应数据，所以新添加的值也会被观察到
   ob.dep.notify()
   return val
 }
@@ -250,6 +268,7 @@ export function del (target: Array<any> | Object, key: any) {
   ) {
     warn(`Cannot delete reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
+  // 数组直接使用splice进行响应
   if (Array.isArray(target) && isValidArrayIndex(key)) {
     target.splice(key, 1)
     return
@@ -265,6 +284,7 @@ export function del (target: Array<any> | Object, key: any) {
   if (!hasOwn(target, key)) {
     return
   }
+  // 直接使用delete进行删除属性
   delete target[key]
   if (!ob) {
     return

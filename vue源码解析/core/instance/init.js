@@ -108,6 +108,7 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
       // 更新当前构造函数的superOptions为最新的superOptions
       Ctor.superOptions = superOptions
       // check if there are any late-modified/attached options (#4976)
+      // 找出变化了的的属性值
       const modifiedOptions = resolveModifiedOptions(Ctor)
       // update base extend options
       if (modifiedOptions) {

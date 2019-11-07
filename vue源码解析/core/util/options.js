@@ -5,7 +5,27 @@ import { warn } from './debug'
 import { set } from '../observer/index'
 import { unicodeRegExp } from './lang'
 import { nativeWatch, hasSymbol } from './env'
+/**
+ * export const ASSET_TYPES = [
+  'component',
+  'directive',
+  'filter'
+]
 
+export const LIFECYCLE_HOOKS = [
+  'beforeCreate',
+  'created',
+  'beforeMount',
+  'mounted',
+  'beforeUpdate',
+  'updated',
+  'beforeDestroy',
+  'destroyed',
+  'activated',
+  'deactivated',
+  'errorCaptured'
+]
+ */
 import {
   ASSET_TYPES,
   LIFECYCLE_HOOKS
@@ -26,6 +46,7 @@ import {
  * how to merge a parent option value and a child option
  * value into the final value.
  */
+// Object.create(null), 空对象
 const strats = config.optionMergeStrategies
 
 /**
@@ -144,6 +165,7 @@ strats.data = function (
 
 /**
  * Hooks and props are merged as arrays.
+ * 构子合并策略，Hooks and props默认合并成数组
  */
 function mergeHook (
   parentVal: ?Array<Function>,
@@ -170,7 +192,7 @@ function dedupeHooks (hooks) {
   }
   return res
 }
-
+// 添加构子到strats上
 LIFECYCLE_HOOKS.forEach(hook => {
   strats[hook] = mergeHook
 })
@@ -181,6 +203,7 @@ LIFECYCLE_HOOKS.forEach(hook => {
  * When a vm is present (instance creation), we need to do
  * a three-way merge between constructor options, instance
  * options and parent options.
+ * 当是一个vm对象时，需要合并vm构造函数，vm实例，和parent入参的options
  */
 function mergeAssets (
   parentVal: ?Object,
@@ -196,7 +219,7 @@ function mergeAssets (
     return res
   }
 }
-
+// filter, compentets,directive合并策略
 ASSET_TYPES.forEach(function (type) {
   strats[type + 's'] = mergeAssets
 })
@@ -360,6 +383,7 @@ function normalizeInject (options: Object, vm: ?Component) {
 
 /**
  * Normalize raw function directives into object format.
+ * directives指令将会分解为{ bind: def, update: def }对象的形式
  */
 function normalizeDirectives (options: Object) {
   const dirs = options.directives
@@ -386,6 +410,7 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * 合并otpins，例如合并两个钩子函数，合并filter等，包含各种策略statg,例如钩子函数会合并成一个数组，其他或许会使用extend合并对象
  */
 export function mergeOptions (
   parent: Object,
@@ -399,9 +424,10 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
-  // 将props jnject directives属性转化成标准的格式
+  // 将props jnject directives属性转化成标准的格式，转化camel形式，转换成对象等
   normalizeProps(child, vm)
   normalizeInject(child, vm)
+  // eDirectives将会分解为{ bind: def, update: def }
   normalizeDirectives(child)
 
   // Apply extends and mixins on the child options,
@@ -409,6 +435,7 @@ export function mergeOptions (
   // the result of another mergeOptions call.
   // Only merged options has the _base property.
   // 未处理的child的extends和mixins属性的递归合并，处理完后会加上_base属性，exrentds和mixins功能类似，表示继承于某个组件的属性
+  // 递归调用extends和mixins
   if (!child._base) {
     if (child.extends) {
       parent = mergeOptions(parent, child.extends, vm)
@@ -430,7 +457,9 @@ export function mergeOptions (
       mergeField(key)
     }
   }
+  // 
   function mergeField (key) {
+    // strats包含对应的钩子和direct,components等合并策略，例如钩子的合并mergeHook是合并成数组，其他则是对象extend处理
     const strat = strats[key] || defaultStrat
     options[key] = strat(parent[key], child[key], vm, key)
   }
