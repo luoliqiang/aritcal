@@ -29,6 +29,8 @@ export default class Dep {
   }
 
   depend () {
+    // dep.Target指向的对象，如果是computed内部的data属性，那么target指向的是coumputed对应的watcher，
+    // 所以该属性的更新会更新到自身和对应的computed属性
     if (Dep.target) {
       Dep.target.addDep(this)
     }
@@ -52,11 +54,14 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
+// 
 Dep.target = null
 const targetStack = []
 
 export function pushTarget (target: ?Watcher) {
   targetStack.push(target)
+  // dep.Target指向的对象，如果是data里面的值，那么指向的是该data的watcher，如果是computed内部的data属性，那么target指向的是coumputed对应的watcher，
+  // 所以该属性的更新会更新到自身和对应的computed属性
   Dep.target = target
 }
 

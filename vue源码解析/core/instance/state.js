@@ -187,8 +187,8 @@ function initComputed (vm: Component, computed: Object) {
       watchers[key] = new Watcher(
         vm,
         getter || noop,
-        noop,
-        computedWatcherOptions
+        noop, // callbak设置为空，是因为不需要computed属性来进行notify通知页面更新，所以computed不具有通知页面更新的setter,
+        computedWatcherOptions // lazy为true，所以只是会实例化watcher而不会调用watcher的get函数
       )
     }
 
@@ -242,12 +242,15 @@ function createComputedGetter (key) {
   return function computedGetter () {
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
-      if (watcher.dirty) {
-        watcher.evaluate()
+      if (watcher.dirty) { // dirty=lazy=true,所以第一次会去watcher。evaluate调用get获取值，第二次则会跳过该阶段，直接返回value
+        watcher.evaluate() // 调用get方法，进行观察者收集 手动出发收集依赖，get方法会调用dep的pushTarget，并将dep.target指向当前watcher
       }
-      if (Dep.target) {
+      // 不需要computed属性来进行notify通知页面更新，所以computed不具有通知页面更新的setter, computed内部属性发生变化，会通知computed的watcher，但是该watcher不进行数据更新，只进行dirty的设置为true
+      // computed内部属性通知完computed的watcher之后再去通知页面的watcher（页面读取computed时会生成一个包含callback的watcher）,完成页面的数据更新
+      if (Dep.target) { 
         watcher.depend()
       }
+      // 第二次会直接返回watcher.value,所以事先了computed的值的缓存
       return watcher.value
     }
   }

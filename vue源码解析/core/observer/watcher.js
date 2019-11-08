@@ -58,6 +58,7 @@ export default class Watcher {
     if (options) {
       this.deep = !!options.deep
       this.user = !!options.user
+      // computed属性的lazy为true
       this.lazy = !!options.lazy
       this.sync = !!options.sync
       this.before = options.before
@@ -93,6 +94,7 @@ export default class Watcher {
         )
       }
     }
+    // computed属性的lazy为true，所以不会自动执行get函数，所以只是创建了watcher实例，但是并未建立和数据的关联，也未添加到数据维护的收集器dep中
     this.value = this.lazy
       ? undefined
       : this.get()
@@ -107,6 +109,9 @@ export default class Watcher {
     const vm = this.vm
     try {
       // 调用一次getter，会在传入的vm中取得vm[expOrFn]的value值，就会触发该value值的getter，继而触发dep对象的addSub方法
+      // 如果是data this.getter函数直接返回值，如果是computed则进行内部data值的访问并计算返回value
+      // 即为循环收集依赖
+      // 如果是computed属性进来，在computed的watcher时已经算出value值了，存储在
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
@@ -130,6 +135,8 @@ export default class Watcher {
    * Add a dependency to this directive.
    */
   addDep (dep: Dep) {
+    // 如果是computed属性，那么该属性的watcher会添加到内部属性的dep中去，
+    // 而且会同样添加到computed内部属性的依赖中去，即实现了继承，所以内部属性的修改最终会触发页面更新，而不是computed,其没有调用html -watcher的callback
     const id = dep.id
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id)
@@ -167,11 +174,16 @@ export default class Watcher {
    */
   update () {
     /* istanbul ignore else */
+    // computed属性的lazy为true,所以其内部data发生变化时通知到computed的wather，该watcher只进行this.dirty = true的设置，而不会调用run进行数据更新
+    // computed自身的update只是更新lazy值，触发的页面更新是由内部属性直接触发的
     if (this.lazy) {
       this.dirty = true
     } else if (this.sync) {
+      // 同步更新直接执行
       this.run()
     } else {
+      // computed视图的更新会由内部属性来触发页面的更新，所以会先触发computed的watcher.run再触发html的watcher.run,所以放在一个队列里面依次取出执行
+      // html-watcher再进入的时候先获取value值，并设置到其wather属性上，在执行了computed的getter触发computed-watcher并将其添加到属性的依赖中，所以最后执行html-watcher的回调的时候传入的是computed计算后的value值，是正确的
       queueWatcher(this)
     }
   }
@@ -211,6 +223,7 @@ export default class Watcher {
    * Evaluate the value of the watcher.
    * This only gets called for lazy watchers.
    */
+  // 给computed属性等lazy watchers使用，因为其读取属性时不能立即对内部的属性取值，需要手动触发
   evaluate () {
     this.value = this.get()
     this.dirty = false

@@ -184,6 +184,7 @@ export function queueWatcher (watcher: Watcher) {
         flushSchedulerQueue()
         return
       }
+      // 数据更新是异步的
       nextTick(flushSchedulerQueue)
     }
   }

@@ -180,7 +180,9 @@ export function defineReactive (
       // 如果该属性原来有getter则继承执行该getter,让该getter返回val;否则返回val
       const value = getter ? getter.call(obj) : val
       if (Dep.target) {
-        // dep.depend会将dep对象自身添加到Dep.target中
+        // dep.depend会将dep对象自身添加到Dep.target中，即收集watcher
+        // 而其收集的watcher为dep.Target指向的对象，如果是computed内部的data属性，那么target指向的是coumputed对应的watcher，
+        // 所以该属性的更新会更新到自身和对应的computed属性
         dep.depend()
         if (childOb) {
           childOb.dep.depend()
