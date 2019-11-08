@@ -232,6 +232,8 @@ export default class Watcher {
   /**
    * Depend on all deps collected by this watcher.
    */
+  // computed的内部属性需要继承computer-watcher的依赖deps,然后将html-watcher添加到各个dep依赖中去
+  // 这样computed内部属性在更新的时候就不仅通知到computed的watcher，还会通知到html-watcher进行页面显示的更新
   depend () {
     let i = this.deps.length
     while (i--) {

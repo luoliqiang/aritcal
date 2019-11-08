@@ -247,6 +247,8 @@ function createComputedGetter (key) {
       }
       // 不需要computed属性来进行notify通知页面更新，所以computed不具有通知页面更新的setter, computed内部属性发生变化，会通知computed的watcher，但是该watcher不进行数据更新，只进行dirty的设置为true
       // computed内部属性通知完computed的watcher之后再去通知页面的watcher（页面读取computed时会生成一个包含callback的watcher）,完成页面的数据更新
+      // 所以第一次Dep.target指向html-watcher,其次会push 入computed-watcher,执行时会顺序相反，所以在执行完watcher.evaluate()后Dep.target就变成了html-watcher，watcher.depend()会将html-watcher添加到每一个computed的内部属性的依赖中
+      // 这样computed的内部属性更新就能通知到computer-watcher和html-watcher了，
       if (Dep.target) { 
         watcher.depend()
       }
