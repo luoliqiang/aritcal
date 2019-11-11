@@ -57,6 +57,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   }
 
   Vue.options = Object.create(null)
+  /* @flow */</T>
   // 初始化 'component','directive','filter'
   ASSET_TYPES.forEach(type => {
     Vue.options[type + 's'] = Object.create(null)
@@ -67,12 +68,15 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   Vue.options._base = Vue
 
   // Vue.options.components = {KeepAlive}
+  // Vue.options.components在打包入口文件platforms/runtime/index中具有包装中就已经添加了，此处只是扩展filters属性
   extend(Vue.options.components, builtInComponents)
 
   // 插件的use方法，必须提供function或者apply值的对象
   initUse(Vue)
   // mixin方法，定义Vue.mixin()方法，会将mixin合并进来的数据全部放到Vue.options上
   initMixin(Vue)
+  // extend方法继承Vue，和Vue原型
   initExtend(Vue)
+  // 'component','directive','filter'的包装处理，filter处理成{bind: func, update: func},components将会使用Vue.extend生成一个个vue实例，所以其实组件都是调用的extend方法
   initAssetRegisters(Vue)
 }

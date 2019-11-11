@@ -38,7 +38,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
-      // 将一些属性代理到实例的$options上
+      // 将构造函数属性，传入的属性，将一些属性代理到实例的$options上
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -97,11 +97,28 @@ export function initInternalComponent (vm: Component, options: InternalComponent
 
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
+  // 有super属性，说明Ctor是Vue.extend构建的子类
   if (Ctor.super) {
     // superOptions递归获取继承父级的options
     const superOptions = resolveConstructorOptions(Ctor.super)
     // 当前构造函数的已存储的父属性options，判断而且是否相等来确定父属性是否发生了变化
-    const cachedSuperOptions = Ctor.superOptions
+    // 例如下面的例子，Profile后又进行了mixin混入了属性，name在new的时候就要去检查父属性是否有更改
+    
+    /**
+     * var Profile = Vue.extend({
+        template: '<p>{{firstName}} {{lastName}} aka {{alias}}</p>'
+      })
+      Vue.mixin({ data: function () {
+        return {
+          firstName: 'Walter',
+          lastName: 'White',
+          alias: 'Heisenberg'
+        }
+      }})
+        new Profile().$mount('#example')
+     */
+     
+    const cachedSuperOptions = Ctor.superOptions // Vue构造函数的options,入directive,filters等
     if (superOptions !== cachedSuperOptions) {
       // super option changed,
       // need to resolve new options.
@@ -120,6 +137,8 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
       }
     }
   }
+  // 未有supor说明是根Vue构造器，直接返回options，options在initGlobalApi和platforms/runtime/index中进行了包装
+  // initGlobalApi添加了filters,base,components属性，runtime/index中包装了filters，components
   return options
 }
 

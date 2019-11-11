@@ -12,7 +12,7 @@ function Vue (options) {
   ) {
     warn('Vue is a constructor and should be called with the `new` keyword')
   }
-  // initMixin模块中会将_init方法注入到vue原型中
+  // initMixin模块中会将_init方法注入到vue原型中,通过extend方法创建的实例也会调用_init
   this._init(options)
 }
 
