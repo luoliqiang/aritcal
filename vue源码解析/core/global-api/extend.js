@@ -73,7 +73,7 @@ export function initExtend (Vue: GlobalAPI) {
 
     // keep a reference to the super options at extension time.
     // later at instantiation we can check if Super's options have
-    // been updated.
+    // been updated. // 对应in
     Sub.superOptions = Super.options
     Sub.extendOptions = extendOptions
     Sub.sealedOptions = extend({}, Sub.options)

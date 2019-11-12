@@ -18,6 +18,7 @@ function Vue (options) {
 
 initMixin(Vue)
 stateMixin(Vue)
+// $emit $on的订阅发布者模式，Vue.prototype.$on = fun，Vue.prototype.$emit = fun
 eventsMixin(Vue)
 lifecycleMixin(Vue)
 renderMixin(Vue)

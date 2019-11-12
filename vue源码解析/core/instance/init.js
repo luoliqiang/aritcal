@@ -46,6 +46,7 @@ export function initMixin (Vue: Class<Component>) {
       )
     }
     /* istanbul ignore else */
+    // 设置vm值的代理
     if (process.env.NODE_ENV !== 'production') {
       initProxy(vm)
     } else {
@@ -53,7 +54,10 @@ export function initMixin (Vue: Class<Component>) {
     }
     // expose real self
     vm._self = vm
+    // 设置vm的 $parent $root $refs $children，
+    // 并且设置生命周期初始值vm._watcher = null vm._inactive = null vm._directInactive = false vm._isMounted = false vm._isDestroyed = false vm._isBeingDestroyed = false
     initLifecycle(vm)
+    // 处理父组件传递给子组件的@hook @click等event事件
     initEvents(vm)
     initRender(vm)
     callHook(vm, 'beforeCreate')
@@ -117,20 +121,22 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
       }})
         new Profile().$mount('#example')
      */
-     
-    const cachedSuperOptions = Ctor.superOptions // Vue构造函数的options,入directive,filters等
+     // Ctor.superOptions ,Vue构造函数的options,入directive,filters等在extend方法中添加到Ctor中的
+    const cachedSuperOptions = Ctor.superOptions 
     if (superOptions !== cachedSuperOptions) {
       // super option changed,
       // need to resolve new options.
       // 更新当前构造函数的superOptions为最新的superOptions
       Ctor.superOptions = superOptions
       // check if there are any late-modified/attached options (#4976)
-      // 找出变化了的的属性值
+      // 找出Ctor自身变化了的的属性值
       const modifiedOptions = resolveModifiedOptions(Ctor)
+      // 再将变化了的值添加到extendOptions上
       // update base extend options
       if (modifiedOptions) {
         extend(Ctor.extendOptions, modifiedOptions)
       }
+      // 因为父和自身都有option发生变化，所以合并新值到Ctor.options上
       options = Ctor.options = mergeOptions(superOptions, Ctor.extendOptions)
       if (options.name) {
         options.components[options.name] = Ctor
@@ -145,6 +151,9 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
 function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
   let modified
   const latest = Ctor.options
+  // Ctor.sealedOptions = extend({}, Sub.options)
+  // 执行Vue.extend时封装的"自身"options，这个属性就是方便检查"自身"的options有没有变化
+ // 遍历当前构造器上的options属性，如果在"自身"封装的options里没有，则证明是新添加的。执行if内的语句。调用dedupe方法，最终返回modified变量(即”自身新添加的options“)
   const sealed = Ctor.sealedOptions
   for (const key in latest) {
     if (latest[key] !== sealed[key]) {

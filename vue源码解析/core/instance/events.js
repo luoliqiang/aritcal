@@ -10,9 +10,13 @@ import {
 import { updateListeners } from '../vdom/helpers/index'
 
 export function initEvents (vm: Component) {
+  // _events只是包含父组件在子组件上绑定的广播事件回调 @hover @click等，子组件需要$emit通知方法
   vm._events = Object.create(null)
+  // 这行代码把我们vm实例上的_hasHookEvent属性设置为false。该属性表示父组件是否通过"@hook:"把钩子函数绑定在当前组件上。该用法可以在上个demo中找到，通过下列方式完成绑定。
+  // @hook:钩子名称="绑定的函数"
   vm._hasHookEvent = false
   // init parent attached events
+  // 也是父组件绑定在子组件上的事件
   const listeners = vm.$options._parentListeners
   if (listeners) {
     updateComponentListeners(vm, listeners)
@@ -62,6 +66,8 @@ export function eventsMixin (Vue: Class<Component>) {
       // optimize hook:event cost by using a boolean flag marked at registration
       // instead of a hash lookup
       if (hookRE.test(event)) {
+        // 父组件有有绑定钩子到该vm组件上，即通过@hook:created="hander"传递钩子给vm,则为true
+        // 即使子组件中自己有created钩子，也是false
         vm._hasHookEvent = true
       }
     }

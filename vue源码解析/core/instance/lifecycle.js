@@ -33,6 +33,7 @@ export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
+  // 最近的非虚拟父组件，keep-alive和transition是虚拟组件，因为不会渲染dom也不会出现在父组件链中
   let parent = options.parent
   if (parent && !options.abstract) {
     while (parent.$options.abstract && parent.$parent) {
@@ -40,18 +41,25 @@ export function initLifecycle (vm: Component) {
     }
     parent.$children.push(vm)
   }
-
+  // 最近的非虚拟祖先
   vm.$parent = parent
+  // parent.$root会递归指向最顶部的vm
   vm.$root = parent ? parent.$root : vm
 
   vm.$children = []
   vm.$refs = {}
-
+  // 组件实例相应的 watcher 实例对象
   vm._watcher = null
+  // 表示keep-alive中组件状态，如被激活，该值为false,反之为true。
   vm._inactive = null
+  // 表示keep-alive中组件状态，如被激活，该值为false,反之为true
+  // 也是表示keep-alive中组件状态的属性
   vm._directInactive = false
+  // 当前实例是否完成挂载
   vm._isMounted = false
+  // 当前实例是销毁
   vm._isDestroyed = false
+  // 当前实例开始销毁
   vm._isBeingDestroyed = false
 }
 
@@ -338,11 +346,13 @@ export function callHook (vm: Component, hook: string) {
   pushTarget()
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
+  // 不是父组件传递进来的hook,则调用options.hook的handler
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }
+  // 父组件传递进来的hook,@hook:created="hander";则通过$emit方式回调，触发观察者对象中的handler，
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook)
   }
