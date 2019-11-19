@@ -62,6 +62,7 @@ export function updateListeners (
   for (name in on) {
     def = cur = on[name]
     old = oldOn[name]
+    // 将@click.native.lazy处理成对象{name: 'click', native: true}
     event = normalizeEvent(name)
     /* istanbul ignore if */
     if (__WEEX__ && isPlainObject(def)) {
@@ -78,9 +79,11 @@ export function updateListeners (
         cur = on[name] = createFnInvoker(cur, vm)
       }
       if (isTrue(event.once)) {
+        // once只绑定一次
         cur = on[name] = createOnceHandler(event.name, cur, event.capture)
       }
-      add(event.name, cur, event.capture, event.passive, event.params)
+      // 带有修饰符的添加passive passive
+      add(event.name, cur, event.passive, event.passive, event.params)
     } else if (cur !== old) {
       old.fns = cur
       on[name] = old

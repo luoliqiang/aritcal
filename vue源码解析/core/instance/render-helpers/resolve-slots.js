@@ -17,11 +17,13 @@ export function resolveSlots (
     const child = children[i]
     const data = child.data
     // remove slot attribute if the node is resolved as a Vue slot node
+    // 移除slot属性
     if (data && data.attrs && data.attrs.slot) {
       delete data.attrs.slot
     }
     // named slots should only be respected if the vnode was rendered in the
     // same context.
+    // 同一个上下文环境的具名插槽才保留
     if ((child.context === context || child.fnContext === context) &&
       data && data.slot != null
     ) {
@@ -33,10 +35,12 @@ export function resolveSlots (
         slot.push(child)
       }
     } else {
+      // 默认插槽
       (slots.default || (slots.default = [])).push(child)
     }
   }
   // ignore slots that contains only whitespace
+  // 忽略空白插槽
   for (const name in slots) {
     if (slots[name].every(isWhitespace)) {
       delete slots[name]

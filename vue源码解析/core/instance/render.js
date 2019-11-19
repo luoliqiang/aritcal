@@ -22,12 +22,15 @@ export function initRender (vm: Component) {
   const options = vm.$options
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
   const renderContext = parentVnode && parentVnode.context
+  // 解析插槽，并解析为对象vm.$slots = {header: '',footer: ''}
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
+  // 使用Object.freeze创建的对象，该对象不会被响应
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  // 创建createElement函数到vm上
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.

@@ -38,7 +38,7 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
-      // 将构造函数属性，传入的属性，将一些属性代理到实例的$options上
+      // 将构造函数属性，传入的属性，将一些属性代理到实例的$options上，mergeOptions是继承父类属性并且和options进行合并
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -57,7 +57,7 @@ export function initMixin (Vue: Class<Component>) {
     // 设置vm的 $parent $root $refs $children，
     // 并且设置生命周期初始值vm._watcher = null vm._inactive = null vm._directInactive = false vm._isMounted = false vm._isDestroyed = false vm._isBeingDestroyed = false
     initLifecycle(vm)
-    // 处理父组件传递给子组件的@hook @click等event事件
+    // 处理父组件传递给子组件的@hook @click等event事件，转换成各个组件实例上的事件绑定
     initEvents(vm)
     initRender(vm)
     callHook(vm, 'beforeCreate')

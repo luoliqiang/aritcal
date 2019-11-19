@@ -48,7 +48,9 @@ export function updateComponentListeners (
   listeners: Object,
   oldListeners: ?Object
 ) {
+  // 设置target指向，就是对各个vm实例，进行对应的事件绑定
   target = vm
+  // 将@click.native.lazy等简单拆分后处理，添加on或者once
   updateListeners(listeners, oldListeners || {}, add, remove, createOnceHandler, vm)
   target = undefined
 }
