@@ -25,6 +25,7 @@ const ALWAYS_NORMALIZE = 2
 
 // wrapper function for providing a more flexible interface
 // without getting yelled at by flow
+// 返回虚拟dom, 该函数主要对数据进行pollyfy
 export function createElement (
   context: Component,
   tag: any,
@@ -33,6 +34,8 @@ export function createElement (
   normalizationType: any,
   alwaysNormalize: boolean
 ): VNode | Array<VNode> {
+  // isPrimitive:js中的基础值 string number symbol boolean
+  // 如果data是数组（子dom）或者普通类型(文字)，name认为是省略了data，而直接传入的children子组件
   if (Array.isArray(data) || isPrimitive(data)) {
     normalizationType = children
     children = data
@@ -51,12 +54,14 @@ export function _createElement (
   children?: any,
   normalizationType?: number
 ): VNode | Array<VNode> {
+  // 已经被观察的对象不能用来创建dom
   if (isDef(data) && isDef((data: any).__ob__)) {
     process.env.NODE_ENV !== 'production' && warn(
       `Avoid using observed data object as vnode data: ${JSON.stringify(data)}\n` +
       'Always create fresh vnode data objects in each render!',
       context
     )
+    // 空的vnode 注释node
     return createEmptyVNode()
   }
   // object syntax in v-bind
@@ -80,13 +85,17 @@ export function _createElement (
     }
   }
   // support single function children as default scoped slot
+  // 如果子级虚拟节点是一个只有一个函数的数组，name就认为是默认作用域插槽
   if (Array.isArray(children) &&
     typeof children[0] === 'function'
   ) {
     data = data || {}
+    //作用域插槽的处理，转换成对象，设置key值为default
     data.scopedSlots = { default: children[0] }
+    // 清空数组的方法用lenth=0
     children.length = 0
   }
+  // 对于会生成复制的vdom,e.g. <template>, <slot>, v-for, 等，需要一个normalizeChildren的方法来规范各个vdom
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
