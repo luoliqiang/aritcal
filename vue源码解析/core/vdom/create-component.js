@@ -108,10 +108,11 @@ export function createComponent (
   if (isUndef(Ctor)) {
     return
   }
-
+  // 根vue构造函数 new Vue()
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
+  // 如果是对象，则用extend方法转换成构造函数
   if (isObject(Ctor)) {
     Ctor = baseCtor.extend(Ctor)
   }
@@ -126,6 +127,8 @@ export function createComponent (
   }
 
   // async component
+  // Ctor.cid不存在则是异步组件
+  // 对于一个组件来说，比如Vue.component(component-name,obj|func)，组件的值可以是一个对象，也可以是一个函数，如果是对象，则注册时会执行Vue.extend()函数
   let asyncFactory
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor

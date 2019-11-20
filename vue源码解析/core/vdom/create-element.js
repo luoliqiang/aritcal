@@ -96,6 +96,7 @@ export function _createElement (
     children.length = 0
   }
   // 对于会生成复制的vdom,e.g. <template>, <slot>, v-for, 等，需要一个normalizeChildren的方法来规范各个vdom
+  // 将多为的数组子children转换成一维
   if (normalizationType === ALWAYS_NORMALIZE) {
     children = normalizeChildren(children)
   } else if (normalizationType === SIMPLE_NORMALIZE) {
@@ -105,12 +106,13 @@ export function _createElement (
   if (typeof tag === 'string') {
     let Ctor
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
+    // 如果是保留内置的节点，例如我们常用的<div id="app"></div>
     if (config.isReservedTag(tag)) {
       // platform built-in elements
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
-      )
+      ) // 如果是tag对应的是一个子组件的名称，那么用子组件来创建vnode例如 [createElement('h1', '一则头条'), createElement('MyComponent')]
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
       vnode = createComponent(Ctor, data, context, children, tag)
@@ -118,6 +120,7 @@ export function _createElement (
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its
       // parent normalizes children
+      // 不知道的节点也会渲染，所以也我们会在html中看见
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context

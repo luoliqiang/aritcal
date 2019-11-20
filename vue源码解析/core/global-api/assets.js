@@ -19,6 +19,7 @@ export function initAssetRegisters (Vue: GlobalAPI) {
         if (process.env.NODE_ENV !== 'production' && type === 'component') {
           validateComponentName(id)
         }
+        // 存对象则被认为是同步组件，会直接调用exend方法，如果是函数，那么就是异步组件，则不在此处进行处理
         if (type === 'component' && isPlainObject(definition)) {
           definition.name = definition.name || id
           definition = this.options._base.extend(definition)

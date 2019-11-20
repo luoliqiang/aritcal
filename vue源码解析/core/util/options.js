@@ -483,6 +483,8 @@ export function resolveAsset (
   }
   const assets = options[type]
   // check local registration variations first
+  // 检查自身对象上是否有该组件，如果有则直接返回不去父级找
+  // 否则去父级找是否有extend继承的父组件，或者全局组件等
   if (hasOwn(assets, id)) return assets[id]
   const camelizedId = camelize(id)
   if (hasOwn(assets, camelizedId)) return assets[camelizedId]
