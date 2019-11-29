@@ -115,6 +115,12 @@ export function _createElement (
       ) // 如果是tag对应的是一个子组件的名称，那么用子组件来创建vnode例如 [createElement('h1', '一则头条'), createElement('MyComponent')]
     } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
+      /**createComponent
+       * Ctor是对象，则转换成构造函数Ctor,是异步组件，则创建异步Ctor
+       * 将data和Crot中的v-modle数据转换成对象格式
+       * 处理函数Ctor
+       * 将默认hook合并data中的hook去
+       */
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements
@@ -128,12 +134,15 @@ export function _createElement (
     }
   } else {
     // direct component options / constructor
+    // 传入的就是组件 createElement(MyComponent)
     vnode = createComponent(tag, data, context, children)
   }
   if (Array.isArray(vnode)) {
     return vnode
   } else if (isDef(vnode)) {
+    // 处理svg标签
     if (isDef(ns)) applyNS(vnode, ns)
+    //  将style和class进行深度watcher
     if (isDef(data)) registerDeepBindings(data)
     return vnode
   } else {
@@ -162,6 +171,7 @@ function applyNS (vnode, ns, force) {
 // ref #5318
 // necessary to ensure parent re-render when deep bindings like :style and
 // :class are used on slot nodes
+// 对于style和class要进行深度绑定，保证在子组件更新了改数据，父组件也能刷新
 function registerDeepBindings (data) {
   if (isObject(data.style)) {
     traverse(data.style)

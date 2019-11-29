@@ -8,7 +8,7 @@ import {
   hyphenate,
   formatComponentName
 } from 'core/util/index'
-
+// 将data中的props和attrs中的数据中有和Ctor.options中的重复的，取出来，
 export function extractPropsFromVNodeData (
   data: VNodeData,
   Ctor: Class<Component>,
@@ -22,9 +22,11 @@ export function extractPropsFromVNodeData (
     return
   }
   const res = {}
+  // attrs就是v-model转化后的value值的key-value形式
   const { attrs, props } = data
   if (isDef(attrs) || isDef(props)) {
     for (const key in propOptions) {
+      // hyphenate将aBc -> a-bc
       const altKey = hyphenate(key)
       if (process.env.NODE_ENV !== 'production') {
         const keyInLowerCase = key.toLowerCase()

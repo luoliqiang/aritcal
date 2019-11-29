@@ -101,11 +101,14 @@ export function createFunctionalComponent (
   const options = Ctor.options
   const props = {}
   const propOptions = options.props
+  // 构造函数中有props则取出，
   if (isDef(propOptions)) {
     for (const key in propOptions) {
+      // 取得prop值，如果没有则取得默认值，是一个plllfiy写法
       props[key] = validateProp(key, propOptions, propsData || emptyObject)
     }
   } else {
+    // 合并data中的attrs和props到props中去
     if (isDef(data.attrs)) mergeProps(props, data.attrs)
     if (isDef(data.props)) mergeProps(props, data.props)
   }

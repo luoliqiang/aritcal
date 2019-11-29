@@ -97,7 +97,12 @@ const componentVNodeHooks = {
 }
 
 const hooksToMerge = Object.keys(componentVNodeHooks)
-
+/**createComponent
+ * Ctor是对象，则转换成构造函数Ctor,是异步组件，则创建异步Ctor
+ * 将data和Crot中的v-modle数据转换成对象格式
+ * 处理函数Ctor
+ * 将默认hook合并data中的hook去
+ */
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
   data: ?VNodeData,
@@ -151,28 +156,42 @@ export function createComponent (
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
+  // 解析Ctor的options,防止在ctor后修改了父options
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
+  // 将v-model="inpVal"的形式转换成datt.on = {inpVal: callback}的形式,并且将options中的
+  /**
+   * 所以data会被修改为
+   * data: {
+   *  attrs: {
+   *    value: 'sssss',
+   *  },
+      on: [func1,func2],
+    }
+   */
   if (isDef(data.model)) {
     transformModel(Ctor.options, data)
   }
 
   // extract props
+  // 将data中的props和attrs中的数据中有和Ctor.options中的重复的，取出来，因为data中的优先级更高
   const propsData = extractPropsFromVNodeData(data, Ctor, tag)
 
   // functional component
+  // 函数组件
   if (isTrue(Ctor.options.functional)) {
     return createFunctionalComponent(Ctor, propsData, data, context, children)
   }
 
   // extract listeners, since these needs to be treated as
   // child component listeners instead of DOM listeners
+  // listeners为该组件中的监听函数，包括了v-model转化出来的函数
   const listeners = data.on
   // replace with listeners with .native modifier
   // so it gets processed during parent component patch.
   data.on = data.nativeOn
-
+  // 虚拟组件 keepalive等不会挂载的组件
   if (isTrue(Ctor.options.abstract)) {
     // abstract components do not keep anything
     // other than props & listeners & slot
@@ -186,6 +205,8 @@ export function createComponent (
   }
 
   // install component management hooks onto the placeholder node
+  // 合并data中传入的hook到原来的默认hook中，默认hook有init ,prepath,insert,destory
+  // 合并策略是concat
   installComponentHooks(data)
 
   // return a placeholder vnode
@@ -227,6 +248,7 @@ export function createComponentInstanceForVnode (
 }
 
 function installComponentHooks (data: VNodeData) {
+  // 将默认hook合并到data中传入的hook中
   const hooks = data.hook || (data.hook = {})
   for (let i = 0; i < hooksToMerge.length; i++) {
     const key = hooksToMerge[i]
@@ -237,7 +259,7 @@ function installComponentHooks (data: VNodeData) {
     }
   }
 }
-
+// mergeHook的合并策略是concat
 function mergeHook (f1: any, f2: any): Function {
   const merged = (a, b) => {
     // flow complains about extra args which is why we use any
@@ -251,11 +273,18 @@ function mergeHook (f1: any, f2: any): Function {
 // transform component v-model info (value and callback) into
 // prop and event handler respectively.
 function transformModel (options, data: any) {
+  // 取出options总的model中的prop事件属性
   const prop = (options.model && options.model.prop) || 'value'
+  // 取出options总的model中的event事件名
   const event = (options.model && options.model.event) || 'input'
+  // 将data.modle.value也就是v-model的值赋值给data.attrs，赋值的key为options中的属性名或者value，即data.attrs.value = value
   ;(data.attrs || (data.attrs = {}))[prop] = data.model.value
+  // 获取v-model执行的绑定函数
   const on = data.on || (data.on = {})
+  // 已经有的函数，有肯能多次执行reander函数那么可能已经存在了上次绑定的函数
   const existing = on[event]
+  // 这次data传入的函数
+  // 合并函数组或者设置现在添加的到data。on上
   const callback = data.model.callback
   if (isDef(existing)) {
     if (
@@ -268,4 +297,14 @@ function transformModel (options, data: any) {
   } else {
     on[event] = callback
   }
+
+  /**
+   * 所以返回应该是
+   * data: {
+   *  attrs: {
+   *    value: 'sssss',
+   *  },
+      on: [func1,func2],
+    }
+   */
 }

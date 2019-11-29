@@ -17,7 +17,7 @@ type PropOptions = {
   required: ?boolean,
   validator: ?Function
 };
-
+// 取得prop值，如果没有则取得默认值
 export function validateProp (
   key: string,
   propOptions: Object,
@@ -28,6 +28,7 @@ export function validateProp (
   const absent = !hasOwn(propsData, key)
   let value = propsData[key]
   // boolean casting
+  // 如果自身对象上没有值，且未bolearn形式，那么赋值false或者true
   const booleanIndex = getTypeIndex(Boolean, prop.type)
   if (booleanIndex > -1) {
     if (absent && !hasOwn(prop, 'default')) {
@@ -85,6 +86,7 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
     vm.$options.propsData[key] === undefined &&
     vm._props[key] !== undefined
   ) {
+    // 原型属性
     return vm._props[key]
   }
   // call factory function for non-Function types
@@ -180,6 +182,8 @@ function assertType (value: any, type: Function): {
  * across different vms / iframes.
  */
 function getType (fn) {
+  // 调用原型对象上的Number.toString()方法
+  // "function Number() { [native code] }"
   const match = fn && fn.toString().match(/^\s*function (\w+)/)
   return match ? match[1] : ''
 }
