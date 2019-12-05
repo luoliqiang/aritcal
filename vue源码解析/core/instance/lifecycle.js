@@ -124,6 +124,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
     // remove reference from data ob
     // frozen object may not have observer.
+    // 移除指针
     if (vm._data.__ob__) {
       vm._data.__ob__.vmCount--
     }
@@ -134,6 +135,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // fire destroyed hook
     callHook(vm, 'destroyed')
     // turn off all instance listeners.
+    // 移除手游的$on函数
     vm.$off()
     // remove __vue__ reference
     if (vm.$el) {
@@ -343,7 +345,9 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
+  // 当调用生命周期钩子函数时，禁止依赖收集
   pushTarget()
+  // 解析出绑定的钩子函数
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   // 不是父组件传递进来的hook,则调用options.hook的handler
@@ -353,6 +357,7 @@ export function callHook (vm: Component, hook: string) {
     }
   }
   // 父组件传递进来的hook,@hook:created="hander";则通过$emit方式回调，触发观察者对象中的handler，
+  // 而父组件的@hook又会解析到自身组件中的on回调函数栈中
   if (vm._hasHookEvent) {
     vm.$emit('hook:' + hook)
   }

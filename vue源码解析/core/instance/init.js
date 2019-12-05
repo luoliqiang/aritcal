@@ -58,21 +58,29 @@ export function initMixin (Vue: Class<Component>) {
     // 并且设置生命周期初始值vm._watcher = null vm._inactive = null vm._directInactive = false vm._isMounted = false vm._isDestroyed = false vm._isBeingDestroyed = false
     initLifecycle(vm)
     // 处理父组件传递给子组件的@hook @click等event事件，转换成各个组件实例上的事件绑定
+    // $on,$emit等方法是定义在vue.prototype上的，所以每个组件会继承这些方法，然后该组件的vm.$options._parentListeners可以拿到父对象绑定的@on方法，
+    // 组件拿到父方法后在合并到自身的on回调中，这样就能在自己内部操作该方法，实现$emit的通信了
     initEvents(vm)
+    // 创建createElement函数到vm上,createElement会处理异步组件，扁平化组件child等操作最后返回虚拟dom
     initRender(vm)
+    // 钩子函数beforeCreate 在实例初始化之后，数据观测 (data observer) 和 event/watcher 事件配置之前被调用。
     callHook(vm, 'beforeCreate')
+    // provide.inject两个方法的解析，和props类似，递归找到最近的provide值或者默认值，然后赋值
     initInjections(vm) // resolve injections before data/props
+    // 初始化props methods data computed watch，分别调用其各自入口方法initProps initMeth InitData initCompute initWatch
     initState(vm)
+    // 很简单，直接执行initProvide返回工厂函数内的值或者provide对象
     initProvide(vm) // resolve provide after data/props
+    // 在实例创建完成后被立即调用。在这一步，实例已完成以下的配置：数据观测 (data observer)，属性和方法的运算，watch/event 事件回调。然而，挂载阶段还没开始，$el 属性目前不可见
     callHook(vm, 'created')
-
+    // 监控页面性能
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false)
       mark(endTag)
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
-
+    // dom挂载
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
     }

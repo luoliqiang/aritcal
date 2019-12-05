@@ -28,7 +28,20 @@ export default class VNode {
   fnOptions: ?ComponentOptions; // for SSR caching
   devtoolsMeta: ?Object; // used to store functional render context for devtools
   fnScopeId: ?string; // functional scope id support
+/**
+ * 可能是
+ new VNode(
+    `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
+    data, undefined, undefined, undefined, context,
+    { Ctor, propsData, listeners, tag, children },
+    asyncFactory
+  )
 
+  new VNode(
+        tag, data, children,
+        undefined, undefined, context
+      )
+ */
   constructor (
     tag?: string,
     data?: VNodeData,
@@ -50,7 +63,9 @@ export default class VNode {
     this.fnOptions = undefined
     this.fnScopeId = undefined
     this.key = data && data.key
+    // componentOptions可能是{ Ctor, propsData, listeners, tag, children },
     this.componentOptions = componentOptions
+    // 真正挂载实例的componentInstance
     this.componentInstance = undefined
     this.parent = undefined
     this.raw = false

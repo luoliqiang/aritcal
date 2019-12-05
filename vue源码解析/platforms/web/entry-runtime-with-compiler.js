@@ -3,7 +3,7 @@
 import config from 'core/config'
 import { warn, cached } from 'core/util/index'
 import { mark, measure } from 'core/util/perf'
-
+// 根据不同的runtime平台进行不同的一些vue方法和属性的扩展
 import Vue from './runtime/index'
 import { query } from './util/index'
 import { compileToFunctions } from './compiler/index'

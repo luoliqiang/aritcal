@@ -14,8 +14,10 @@ export function initProvide (vm: Component) {
 }
 
 export function initInjections (vm: Component) {
+  // 递归找到最近的provide值，否则使用默认值
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
+    // 默认数据是不可响应的，但是如果provide传入的就是一个可监听的对象，那么其对象的属性还是可响应的
     toggleObserving(false)
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
@@ -50,6 +52,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       if (key === '__ob__') continue
       const provideKey = inject[key].from
       let source = vm
+      // 往上递归找到最近的提供的provided值
       while (source) {
         if (source._provided && hasOwn(source._provided, provideKey)) {
           result[key] = source._provided[provideKey]
@@ -57,6 +60,11 @@ export function resolveInject (inject: any, vm: Component): ?Object {
         }
         source = source.$parent
       }
+      // 如果inject有提供默认值，则使用默认值,方法和props类似
+      /**
+       * inject: ['foo'],
+       * inject: {default: 'foo'}
+       */
       if (!source) {
         if ('default' in inject[key]) {
           const provideDefault = inject[key].default

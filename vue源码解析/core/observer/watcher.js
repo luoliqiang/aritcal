@@ -244,6 +244,7 @@ export default class Watcher {
   /**
    * Remove self from all dependencies' subscriber list.
    */
+  // 当组件destoryed的时候回移除所有的deps
   teardown () {
     if (this.active) {
       // remove self from vm's watcher list

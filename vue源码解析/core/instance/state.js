@@ -51,6 +51,7 @@ export function initState (vm: Component) {
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
   if (opts.data) {
+    // observer data
     initData(vm)
   } else {
     observe(vm._data = {}, true /* asRootData */)
@@ -102,6 +103,7 @@ function initProps (vm: Component, propsOptions: Object) {
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 静态属性在Vue.extend()中已经代理到了_props属性中，直接把它移动过来就行了
     if (!(key in vm)) {
       proxy(vm, `_props`, key)
     }
@@ -127,6 +129,7 @@ function initData (vm: Component) {
   const props = vm.$options.props
   const methods = vm.$options.methods
   let i = keys.length
+  // 判断是否有定义重复
   while (i--) {
     const key = keys[i]
     if (process.env.NODE_ENV !== 'production') {
@@ -148,6 +151,7 @@ function initData (vm: Component) {
     }
   }
   // observe data
+  // 观察data
   observe(data, true /* asRootData */)
 }
 
@@ -341,10 +345,12 @@ export function stateMixin (Vue: Class<Component>) {
       warn(`$props is readonly.`, this)
     }
   }
+  // 将data代理到外部，所以可以使用var a = new Vue(); a.$data获取到
   Object.defineProperty(Vue.prototype, '$data', dataDef)
   Object.defineProperty(Vue.prototype, '$props', propsDef)
-
+  // set会用splice处理数组，并且添加响应，在手动触发notify更新
   Vue.prototype.$set = set
+  // splice和set类似
   Vue.prototype.$delete = del
 
   Vue.prototype.$watch = function (
@@ -358,6 +364,7 @@ export function stateMixin (Vue: Class<Component>) {
     }
     options = options || {}
     options.user = true
+    // 创建watcher对象，内部get获取data上的属性然后将该watcher加入到data上的依赖
     const watcher = new Watcher(vm, expOrFn, cb, options)
     if (options.immediate) {
       try {
