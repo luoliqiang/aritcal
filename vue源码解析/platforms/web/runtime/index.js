@@ -35,6 +35,7 @@ extend(Vue.options.components, platformComponents)
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
 // public mount method
+// jydrating 跟服务端渲染相关，如果没有启用的话，其为 false
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean

@@ -31,7 +31,7 @@ export function initMixin (Vue: Class<Component>) {
     // a flag to avoid this being observed
     vm._isVue = true
     // merge options
-    // 如果是extend的组件对象，则会有_isComponent字段，则合并二者的参数
+    // 如果是extend的组件对象，则会有_isComponent字段，子组件也会有，则合并二者的参数
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
@@ -80,7 +80,10 @@ export function initMixin (Vue: Class<Component>) {
       mark(endTag)
       measure(`vue ${vm._name} init`, startTag, endTag)
     }
-    // dom挂载
+    // dom挂载，挂载会调用原型上的￥mount方法，这个时候会一次掉用mountComponent，patch(render()),所以会先执行组件的render，然后在patch进行初次挂载和更新挂载
+    // 父子组件的渲染是一个入栈的顺序，所以组件的渲染顺序是 父created->子created->孙created mounted->子mounted->父mounted
+    // 只有new Vue({el: 'xx'})才有vm.$options.el, 而子组件是通过var c = vue.entend()在new c()的方式创建的，所以不会有el，
+    // 而且子组件应该挂载到父元素上，所以将会在create-component.js中child.$mount(hydrating ? vnode.elm : undefined, hydrating)渲染
     if (vm.$options.el) {
       vm.$mount(vm.$options.el)
     }
@@ -89,6 +92,17 @@ export function initMixin (Vue: Class<Component>) {
 
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   // opts初始值为构造函数中中的options
+  /** options._parentVnode代码在create-compontent.js中，递归渲染子元素的时候传入
+   * export function createComponentInstanceForVnode (
+    vnode: any, // we know it's MountedComponentVNode but flow doesn't
+    parent: any, // activeInstance in lifecycle state 在lifecycle中定义的this指向
+  ): Component {
+    const options: InternalComponentOptions = {
+      _isComponent: true,
+      _parentVnode: vnode,
+      parent
+    }
+   */
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode

@@ -66,7 +66,8 @@ function createKeyToOldIdx (children, beginIdx, endIdx) {
   }
   return map
 }
-
+// 创建更新方法cbs是一个对象，会将所有的class,attr,transiton各自的create更新方法放到cbs['create']中，
+// cbs = {create: [classCb, attrCb...]}
 export function createPatchFunction (backend) {
   let i, j
   const cbs = {}
@@ -131,6 +132,7 @@ export function createPatchFunction (backend) {
     ownerArray,
     index
   ) {
+    // 该组件被渲染过，那么重写可能引发错误，所以拷贝
     if (isDef(vnode.elm) && isDef(ownerArray)) {
       // This vnode was used in a previous render!
       // now it's used as a new node, overwriting its elm would cause
@@ -162,7 +164,7 @@ export function createPatchFunction (backend) {
           )
         }
       }
-
+      // vnode.elm是真正的dom，通过createElement创建，然后对该dom进行class attr cssscope等加工，但是该dom还没有insert到body上去
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
@@ -210,7 +212,9 @@ export function createPatchFunction (backend) {
   function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
     let i = vnode.data
     if (isDef(i)) {
+      // keepalive组件
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
+      // 调用vnode data中的init方法，初始化vnode，将会调用子组件的构造函数，然后子组件mount,就会形成递归调用
       if (isDef(i = i.hook) && isDef(i = i.init)) {
         i(vnode, false /* hydrating */)
       }
@@ -218,8 +222,13 @@ export function createPatchFunction (backend) {
       // it should've created a child instance and mounted it. the child
       // component also has set the placeholder vnode's elm.
       // in that case we can just return the element and be done.
+      // 在调用init后，如果vnode是个子组件，那么就已经完成了created并且mounted，生成了vnode elm,所以只需要返回element就行了
+      // 所以vnode.componentInstance现在是有数据的了
+      // vnode.componentInstance是一个vue的构造函数
       if (isDef(vnode.componentInstance)) {
         initComponent(vnode, insertedVnodeQueue)
+        // 真正的插入dom了，只有根组件创建了真实dom,子组件还并没有完成dom的插入，所以需要用$nexttick来保证所有组件被挂载，
+        // 只是完成了虚拟dom的生成后续只需要排除mounted hooks就可以了
         insert(parentElm, vnode.elm, refElm)
         if (isTrue(isReactivated)) {
           reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm)
@@ -235,12 +244,16 @@ export function createPatchFunction (backend) {
       vnode.data.pendingInsert = null
     }
     vnode.elm = vnode.componentInstance.$el
+    // isPatchable判断vnode.tag是否定义了，例如H1,div
     if (isPatchable(vnode)) {
+      // 调用创建dom的create各个钩子,包括transition，attr，class等，相当于是所有的属性全部创建
       invokeCreateHooks(vnode, insertedVnodeQueue)
+      // 设置dom的scope
       setScope(vnode)
     } else {
       // empty component root.
       // skip all element-related modules except for ref (#3455)
+      // $refs的注册，如果传入多个返回数组，否则返回单个dom或者componentInstance
       registerRef(vnode)
       // make sure to invoke the insert hook
       insertedVnodeQueue.push(vnode)
@@ -302,9 +315,11 @@ export function createPatchFunction (backend) {
   }
 
   function invokeCreateHooks (vnode, insertedVnodeQueue) {
+    // 调用创建dom的create各个钩子,包括transition，attr，class等，相当于是所有的属性全部创建
     for (let i = 0; i < cbs.create.length; ++i) {
       cbs.create[i](emptyNode, vnode)
     }
+    // 如果父组件有传入的hook，调用其中的create和insert
     i = vnode.data.hook // Reuse variable
     if (isDef(i)) {
       if (isDef(i.create)) i.create(emptyNode, vnode)
@@ -315,6 +330,7 @@ export function createPatchFunction (backend) {
   // set scope id attribute for scoped CSS.
   // this is implemented as a special case to avoid the overhead
   // of going through the normal attribute patching process.
+  // 设置dom的css scope
   function setScope (vnode) {
     let i
     if (isDef(i = vnode.fnScopeId)) {
@@ -328,7 +344,7 @@ export function createPatchFunction (backend) {
         ancestor = ancestor.parent
       }
     }
-    // for slot content they should also get the scopeId from the host instance.
+    // for slot content they should also get the scopeId from the host instance. 
     if (isDef(i = activeInstance) &&
       i !== vnode.context &&
       i !== vnode.fnContext &&
@@ -344,6 +360,7 @@ export function createPatchFunction (backend) {
     }
   }
 
+  //递归调用所有组件的destory函数
   function invokeDestroyHook (vnode) {
     let i, j
     const data = vnode.data
@@ -698,6 +715,10 @@ export function createPatchFunction (backend) {
   }
 
   return function patch (oldVnode, vnode, hydrating, removeOnly) {
+    // 第一次初始化则oldVnode undefined
+    // vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
+    // 如果上次有vnode而这次更新替换却是undefined，则代表该组件的销毁，
+    // name就调用invokeDestroyHook递归调用所有自身和子孙的内部destory函数
     if (isUndef(vnode)) {
       if (isDef(oldVnode)) invokeDestroyHook(oldVnode)
       return
@@ -705,9 +726,10 @@ export function createPatchFunction (backend) {
 
     let isInitialPatch = false
     const insertedVnodeQueue = []
-
+    // 第一次更新组件，也就是创建
     if (isUndef(oldVnode)) {
       // empty mount (likely as component), create new root element
+      // 如果没有老的vnode那么认为是第一次初始化vnode
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue)
     } else {

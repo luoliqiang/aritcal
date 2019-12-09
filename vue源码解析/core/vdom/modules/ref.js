@@ -16,7 +16,7 @@ export default {
     registerRef(vnode, true)
   }
 }
-
+// $refs的注册，如果传入多个返回数组，否则返回单个dom或者componentInstance
 export function registerRef (vnode: VNodeWithData, isRemoval: ?boolean) {
   const key = vnode.data.ref
   if (!isDef(key)) return

@@ -44,10 +44,15 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
+      // createComponentInstanceForVnode创建子组件的构造函数 new Sub(options)，内部会调用prototype._init，所以子组件就开始实例化了
+      // 然后接下来执行child.$mount(hydrating ? vnode.elm : undefined, hydrating)则形成了递归，又会进入到这个地方，然后就是入栈的递归调用，所以是最内部的组件先开始$mount,所以此处的child是依次的子孙组件
+      // activeInstance就是上一个的this对象，也就是上一个组件的this，也就是parent
+      // vnode.componentInstance指向的就是下一个子组件
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
         activeInstance
       )
+      // vnode.el代表父元素的elm
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
@@ -66,6 +71,7 @@ const componentVNodeHooks = {
 
   insert (vnode: MountedComponentVNode) {
     const { context, componentInstance } = vnode
+    // 调用组件中的mounted钩子函数
     if (!componentInstance._isMounted) {
       componentInstance._isMounted = true
       callHook(componentInstance, 'mounted')
@@ -102,6 +108,7 @@ const hooksToMerge = Object.keys(componentVNodeHooks)
  * 将data和Crot中的v-modle数据转换成对象格式
  * 处理函数Ctor
  * 将默认hook合并data中的hook去
+ * Ctor代表的是子组件的构造函数
  */
 export function createComponent (
   Ctor: Class<Component> | Function | Object | void,
@@ -210,6 +217,8 @@ export function createComponent (
   installComponentHooks(data)
 
   // return a placeholder vnode
+  // 利用构造函数的name来生成name
+  // Ctor代表子组件
   const name = Ctor.options.name || tag
   const vnode = new VNode(
     `vue-component-${Ctor.cid}${name ? `-${name}` : ''}`,
@@ -229,9 +238,11 @@ export function createComponent (
   return vnode
 }
 
+// 创建一个new Vue()构造函数所用参数就是vnode中的参数
+// 对子组件进行构造函数的初始化
 export function createComponentInstanceForVnode (
   vnode: any, // we know it's MountedComponentVNode but flow doesn't
-  parent: any, // activeInstance in lifecycle state
+  parent: any, // activeInstance in lifecycle state 在lifecycle中定义的this指向
 ): Component {
   const options: InternalComponentOptions = {
     _isComponent: true,
@@ -239,11 +250,14 @@ export function createComponentInstanceForVnode (
     parent
   }
   // check inline-template render functions
+  // 找到tempate模板
   const inlineTemplate = vnode.data.inlineTemplate
   if (isDef(inlineTemplate)) {
+    // 找到render函数
     options.render = inlineTemplate.render
     options.staticRenderFns = inlineTemplate.staticRenderFns
   }
+  // 调用子组件的vue构造函数并传入options
   return new vnode.componentOptions.Ctor(options)
 }
 

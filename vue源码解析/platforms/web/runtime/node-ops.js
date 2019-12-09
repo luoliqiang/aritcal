@@ -1,7 +1,7 @@
 /* @flow */
 
 import { namespaceMap } from 'web/util/index'
-
+// 创建dom，进行挂载，但是并没有insert到body
 export function createElement (tagName: string, vnode: VNode): Element {
   const elm = document.createElement(tagName)
   if (tagName !== 'select') {
@@ -55,5 +55,6 @@ export function setTextContent (node: Node, text: string) {
 }
 
 export function setStyleScope (node: Element, scopeId: string) {
+  // 设置css scope
   node.setAttribute(scopeId, '')
 }

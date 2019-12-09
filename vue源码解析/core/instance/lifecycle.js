@@ -66,19 +66,29 @@ export function initLifecycle (vm: Component) {
 export function lifecycleMixin (Vue: Class<Component>) {
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
+    // dom id
     const prevEl = vm.$el
+    // 保存更新前的vnode,如果是对当前组件更新，vm._vnode = vnode在第一次执行的时候vm._vode就获取到了，所以会存下来
     const prevVnode = vm._vnode
+    // 设置当前instance为this,并且保存前一个instance
     const restoreActiveInstance = setActiveInstance(vm)
+    // 现在的的vnode
     vm._vnode = vnode
+    // Vue.prototype.__patch__方法是在runtime/index.js中定义在原型上的,就是patch -》createPatchFunction({ nodeOps, modules })
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+    // 如果没有前一次的vnode，那就是初次渲染
     if (!prevVnode) {
       // initial render
+      // 初始化渲染，最终会返回原生的dom, return vnode.elm
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
+      // 更新渲染
+      // 传入的prevVnode是更新前的node
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+    // 恢复为前一个instance
     restoreActiveInstance()
     // update __vue__ reference
     if (prevEl) {
@@ -174,6 +184,7 @@ export function mountComponent (
       }
     }
   }
+  // 抛出构造函数beforeMount
   callHook(vm, 'beforeMount')
 
   let updateComponent
@@ -197,6 +208,7 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+      // 先执行_render，则返回一个vnode，然后执行_update
       vm._update(vm._render(), hydrating)
     }
   }
@@ -204,6 +216,7 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+  // watcher内部会执行get方法，也就是执行updateComponent，并且将updateComponent的返回值作为观察者，如果数据发生变化则会执行对应回调noop
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
