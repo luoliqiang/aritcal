@@ -220,6 +220,7 @@ export function mountComponent (
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
   // watcher内部会执行get方法，也就是执行updateComponent，并且将updateComponent的返回值作为观察者，如果数据发生变化则会执行对应回调noop
+  // vm中的数据发生变化就会执行updateComponent
   new Watcher(vm, updateComponent, noop, {
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
@@ -255,6 +256,7 @@ export function updateChildComponent (
   // check if there are dynamic scopedSlots (hand-written or compiled but with
   // dynamic slot names). Static scoped slots compiled from template has the
   // "$stable" marker.
+  // 判断是否未动态插槽，如果是动态插槽会没有$stable参数，
   const newScopedSlots = parentVnode.data.scopedSlots
   const oldScopedSlots = vm.$scopedSlots
   const hasDynamicScopedSlot = !!(
@@ -266,6 +268,7 @@ export function updateChildComponent (
   // Any static slot children from the parent may have changed during parent's
   // update. Dynamic scoped slots may also have changed. In such cases, a forced
   // update is necessary to ensure correctness.
+  // 插槽内容可能更改，所以强制更新
   const needsForceUpdate = !!(
     renderChildren ||               // has new static slots
     vm.$options._renderChildren ||  // has old static slots

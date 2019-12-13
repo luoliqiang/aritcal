@@ -62,6 +62,7 @@ const componentVNodeHooks = {
   prepatch (oldVnode: MountedComponentVNode, vnode: MountedComponentVNode) {
     const options = vnode.componentOptions
     const child = vnode.componentInstance = oldVnode.componentInstance
+    // 更新子组价上的prop on $vnode 等属性
     updateChildComponent(
       child,
       options.propsData, // updated props
