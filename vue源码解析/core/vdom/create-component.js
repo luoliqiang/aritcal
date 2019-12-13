@@ -52,7 +52,9 @@ const componentVNodeHooks = {
         vnode,
         activeInstance
       )
-      // vnode.el代表父元素的elm
+      // vnode.el代表父元素的elm，第一次new Vue({el: app})后elm代表#app
+      // 浏览器环境下传入undefined，则会createeElement新生产一个dom
+      // 所以从父组件到子组件是递归调用child.$mount，递归生成的div dom
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },
@@ -213,7 +215,7 @@ export function createComponent (
 
   // install component management hooks onto the placeholder node
   // 合并data中传入的hook到原来的默认hook中，默认hook有init ,prepath,insert,destory
-  // 合并策略是concat
+  // 合并策略是concat, 所以在$mounted组件的时候可以根据hook.init方法来判断是不是函数vnode
   installComponentHooks(data)
 
   // return a placeholder vnode

@@ -77,10 +77,11 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // Vue.prototype.__patch__方法是在runtime/index.js中定义在原型上的,就是patch -》createPatchFunction({ nodeOps, modules })
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
-    // 如果没有前一次的vnode，那就是初次渲染
+    // 如果没有前一次的vnode，那就是初次渲染，所以组件的第一次渲染都会走进来，更新才会走下面
     if (!prevVnode) {
       // initial render
       // 初始化渲染，最终会返回原生的dom, return vnode.elm
+      // vm.$el是当前vnode对应的dom，是通过createElement创建的
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     } else {
       // updates
@@ -163,6 +164,8 @@ export function mountComponent (
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  // $el为真实的dom,有可能已经是页面上的，有可能是createElemete创建的
+  // 会为每一个当前的vnode创建一个div
   vm.$el = el
   if (!vm.$options.render) {
     vm.$options.render = createEmptyVNode

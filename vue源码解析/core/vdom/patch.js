@@ -143,9 +143,16 @@ export function createPatchFunction (backend) {
     }
 
     vnode.isRootInsert = !nested // for transition enter check
+    // render渲染返回的vnode如果是一个组件类例如：render({tag: 'componentName'}),那么对组件类进行初始化，并且递归其内部的子组件,
+    // 在任何一次递归中如果是一个普通类型了，那么createComponent返回true，继续执行当前递归层的其他逻辑，例如child的处理
+    // 调用组件的init钩子创建子孙递归，并调用initComponent函数进行自身的class refs attr等熟悉的添加
+    // 最后再插入到父级dom中
+    // 如果该组件也就是vnode是一个函数类的，也就是子组件那么不再执行下面，如果是一个简单的tag类型，那么执行下面的构建
+    //
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
       return
     }
+    // 下面是render中普通tag的渲染情况，vnode为简单div h1等形式的vnode
 
     const data = vnode.data
     const children = vnode.children
@@ -165,6 +172,7 @@ export function createPatchFunction (backend) {
         }
       }
       // vnode.elm是真正的dom，通过createElement创建，然后对该dom进行class attr cssscope等加工，但是该dom还没有insert到body上去
+      // vnode.$el是elm外层的dom,每个组件最外层都会包裹一层div，不是用户真正tag定义的dom
       vnode.elm = vnode.ns
         ? nodeOps.createElementNS(vnode.ns, tag)
         : nodeOps.createElement(tag, vnode)
@@ -192,8 +200,10 @@ export function createPatchFunction (backend) {
       } else {
         createChildren(vnode, children, insertedVnodeQueue)
         if (isDef(data)) {
+          // 创建dom的class attr 等各个初始化的属性
           invokeCreateHooks(vnode, insertedVnodeQueue)
         }
+        // 将当前dom插入到父dom中
         insert(parentElm, vnode.elm, refElm)
       }
 
@@ -201,9 +211,11 @@ export function createPatchFunction (backend) {
         creatingElmInVPre--
       }
     } else if (isTrue(vnode.isComment)) {
+      // 注释
       vnode.elm = nodeOps.createComment(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     } else {
+      // 文字类型
       vnode.elm = nodeOps.createTextNode(vnode.text)
       insert(parentElm, vnode.elm, refElm)
     }
@@ -214,7 +226,7 @@ export function createPatchFunction (backend) {
     if (isDef(i)) {
       // keepalive组件
       const isReactivated = isDef(vnode.componentInstance) && i.keepAlive
-      // 调用vnode data中的init方法，初始化vnode，将会调用子组件的构造函数，然后子组件mount,就会形成递归调用
+      // 调用vnode data中的init方法，初始化vnode，将会调用子组件的构造函数，然后子组件￥mount,就会形成递归调用，每次调用都会用createElement方法创建一个新的div
       if (isDef(i = i.hook) && isDef(i = i.init)) {
         i(vnode, false /* hydrating */)
       }
@@ -293,12 +305,14 @@ export function createPatchFunction (backend) {
       }
     }
   }
-
+  // 如果子类是一个文字，则直接添加，如果是数组，则调用createElm方法
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
       if (process.env.NODE_ENV !== 'production') {
+        // 检查子组件中是否有相同的key
         checkDuplicateKeys(children)
       }
+      // 再次调用子元素进行createElm方法的调用
       for (let i = 0; i < children.length; ++i) {
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
       }
@@ -489,7 +503,7 @@ export function createPatchFunction (backend) {
       removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx)
     }
   }
-
+  // 检查是否有相同的key
   function checkDuplicateKeys (children) {
     const seenKeys = {}
     for (let i = 0; i < children.length; i++) {
@@ -733,11 +747,15 @@ export function createPatchFunction (backend) {
       isInitialPatch = true
       createElm(vnode, insertedVnodeQueue)
     } else {
+      // 已经存在的组件进行组件的更新
       const isRealElement = isDef(oldVnode.nodeType)
       if (!isRealElement && sameVnode(oldVnode, vnode)) {
+        // 相似就去打补丁（增删改）
         // patch existing root node
         patchVnode(oldVnode, vnode, insertedVnodeQueue, null, null, removeOnly)
       } else {
+        // 第一次new Vue({el: 'app'})的时候name传入进来的oldvnode就是真正的dom app
+        // 只要不是更新dom,那么都是通过createElement创建的，所以都是realElement
         if (isRealElement) {
           // mounting to a real element
           // check if this is server-rendered content and if we can perform
@@ -766,7 +784,9 @@ export function createPatchFunction (backend) {
         }
 
         // replacing existing element
+        // oldElm为真实的dom树上的值，例如#app
         const oldElm = oldVnode.elm
+        // #app的父级
         const parentElm = nodeOps.parentNode(oldElm)
 
         // create new node
@@ -783,8 +803,10 @@ export function createPatchFunction (backend) {
         // update parent placeholder node element, recursively
         if (isDef(vnode.parent)) {
           let ancestor = vnode.parent
+          // 判断vnode的构造函数components是否有tag
           const patchable = isPatchable(vnode)
           while (ancestor) {
+            // cbs是组件创建需要的对应的create，destory等方法，而不是用户传入的create
             for (let i = 0; i < cbs.destroy.length; ++i) {
               cbs.destroy[i](ancestor)
             }
@@ -819,6 +841,7 @@ export function createPatchFunction (backend) {
       }
     }
 
+    // 在insert 到parent并且compiler初始化组件上的各种class attr transtitiom style等后才在这个地方才是触发mounted
     invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch)
     return vnode.elm
   }

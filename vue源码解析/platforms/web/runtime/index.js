@@ -40,6 +40,7 @@ Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
 ): Component {
+  // 如果有el，例如初始化new Vue({el: '#app'})，则返回dom，否则例如则创建一个div的dom返回
   el = el && inBrowser ? query(el) : undefined
   return mountComponent(this, el, hydrating)
 }
