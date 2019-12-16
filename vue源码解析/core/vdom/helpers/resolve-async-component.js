@@ -37,6 +37,7 @@ export function createAsyncPlaceholder (
   tag: ?string
 ): VNode {
   const node = createEmptyVNode()
+  //asyncFactory用来判断是否是
   node.asyncFactory = factory
   node.asyncMeta = { data, context, children, tag }
   return node

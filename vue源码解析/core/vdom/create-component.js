@@ -44,7 +44,7 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     } else {
-      // createComponentInstanceForVnode创建子组件的构造函数 new Sub(options)，内部会调用prototype._init，所以子组件就开始实例化了
+      // createComponentInstanceForVnode创建组件的构造函数 new Sub(options)，内部会调用prototype._init，所以子组件就开始实例化了
       // 然后接下来执行child.$mount(hydrating ? vnode.elm : undefined, hydrating)则形成了递归，又会进入到这个地方，然后就是入栈的递归调用，所以是最内部的组件先开始$mount,所以此处的child是依次的子孙组件
       // activeInstance就是上一个的this对象，也就是上一个组件的this，也就是parent
       // vnode.componentInstance指向的就是下一个子组件
