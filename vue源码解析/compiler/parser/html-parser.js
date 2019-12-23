@@ -54,7 +54,9 @@ function decodeAttr (value, shouldDecodeNewlines) {
 export function parseHTML (html, options) {
   const stack = []
   const expectHTML = options.expectHTML
+  // 自闭合标签<br/>
   const isUnaryTag = options.isUnaryTag || no
+  // 可省略闭合标签例如<tr>
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
   let index = 0
   let last, lastTag
@@ -62,7 +64,9 @@ export function parseHTML (html, options) {
     last = html
     // Make sure we're not in a plaintext content element like script/style
     if (!lastTag || !isPlainTextElement(lastTag)) {
+      // textEnd为当前<>开始或者文字内容的结束（也就是下一个<>的开始）
       let textEnd = html.indexOf('<')
+      // <div>test开头<div>
       if (textEnd === 0) {
         // Comment:
         if (comment.test(html)) {
@@ -115,6 +119,7 @@ export function parseHTML (html, options) {
       }
 
       let text, rest, next
+      // div>text中的text开始解析
       if (textEnd >= 0) {
         rest = html.slice(textEnd)
         while (
@@ -131,11 +136,11 @@ export function parseHTML (html, options) {
         }
         text = html.substring(0, textEnd)
       }
-
+      // 没有结束标签了，说明全是文字
       if (textEnd < 0) {
         text = html
       }
-
+      // 移动指针
       if (text) {
         advance(text.length)
       }
@@ -183,7 +188,7 @@ export function parseHTML (html, options) {
     index += n
     html = html.substring(n)
   }
-
+  // 将html解析到match对象中
   function parseStartTag () {
     const start = html.match(startTagOpen)
     if (start) {
@@ -194,6 +199,7 @@ export function parseHTML (html, options) {
       }
       advance(start[0].length)
       let end, attr
+      // 解析attr属性
       while (!(end = html.match(startTagClose)) && (attr = html.match(dynamicArgAttribute) || html.match(attribute))) {
         attr.start = index
         advance(attr[0].length)
@@ -214,9 +220,11 @@ export function parseHTML (html, options) {
     const unarySlash = match.unarySlash
 
     if (expectHTML) {
+      // 段落式元素
       if (lastTag === 'p' && isNonPhrasingTag(tagName)) {
         parseEndTag(lastTag)
       }
+      // 可以省略闭合标签
       if (canBeLeftOpenTag(tagName) && lastTag === tagName) {
         parseEndTag(tagName)
       }
@@ -226,6 +234,7 @@ export function parseHTML (html, options) {
 
     const l = match.attrs.length
     const attrs = new Array(l)
+    //解析html属性值{name:'id',value:'test'}的格式
     for (let i = 0; i < l; i++) {
       const args = match.attrs[i]
       const value = args[3] || args[4] || args[5] || ''
@@ -234,6 +243,7 @@ export function parseHTML (html, options) {
         : options.shouldDecodeNewlines
       attrs[i] = {
         name: args[1],
+        // 处理转义字符
         value: decodeAttr(value, shouldDecodeNewlines)
       }
       if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
@@ -259,7 +269,9 @@ export function parseHTML (html, options) {
 
     // Find the closest opened tag of the same type
     if (tagName) {
+      // 标签名转成小写
       lowerCasedTagName = tagName.toLowerCase()
+      // 获取与结束标签匹配的最近的标签
       for (pos = stack.length - 1; pos >= 0; pos--) {
         if (stack[pos].lowerCasedTag === lowerCasedTagName) {
           break

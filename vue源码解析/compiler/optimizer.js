@@ -20,6 +20,7 @@ const genStaticKeysCached = cached(genStaticKeys)
  */
 export function optimize (root: ?ASTElement, options: CompilerOptions) {
   if (!root) return
+  //对静态标签进行缓存
   isStaticKey = genStaticKeysCached(options.staticKeys || '')
   isPlatformReservedTag = options.isReservedTag || no
   // first pass: mark all non-static nodes.
@@ -98,9 +99,11 @@ function markStaticRoots (node: ASTNode, isInFor: boolean) {
 }
 
 function isStatic (node: ASTNode): boolean {
+  // {{ 表达式的值 }}
   if (node.type === 2) { // expression
     return false
   }
+  // 静态text的值
   if (node.type === 3) { // text
     return true
   }

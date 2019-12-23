@@ -220,7 +220,11 @@ export function parse (
       if (isIE && ns === 'svg') {
         attrs = guardIESVGBug(attrs)
       }
-
+      //创建element元素，element其实就是{type: 1,
+      //tag: "div",
+      //attrsList: [{name: "id", value: "test"}]],
+      //attrsMap: makeAttrsMap(attrs), //parent:undefined
+      //children: []}的一个对象
       let element: ASTElement = createASTElement(tag, attrs, currentParent)
       if (ns) {
         element.ns = ns
@@ -248,7 +252,7 @@ export function parse (
           }
         })
       }
-
+      //排除script,style标签
       if (isForbiddenTag(element) && !isServerRendering()) {
         element.forbidden = true
         process.env.NODE_ENV !== 'production' && warn(
@@ -260,16 +264,19 @@ export function parse (
       }
 
       // apply pre-transforms
+      //若html里面有v-model等指令，通过preTransforms进行转换
       for (let i = 0; i < preTransforms.length; i++) {
         element = preTransforms[i](element, options) || element
       }
 
       if (!inVPre) {
+        // 判断是否有v-pre属性
         processPre(element)
         if (element.pre) {
           inVPre = true
         }
       }
+      //判断标签名是不是pre
       if (platformIsPreTag(element.tag)) {
         inPre = true
       }
@@ -277,11 +284,13 @@ export function parse (
         processRawAttrs(element)
       } else if (!element.processed) {
         // structural directives
+        // 处理v-for
         processFor(element)
+         // 处理v-if
         processIf(element)
         processOnce(element)
       }
-
+      // 树结构的root节点处理
       if (!root) {
         root = element
         if (process.env.NODE_ENV !== 'production') {
@@ -307,7 +316,7 @@ export function parse (
       }
       closeElement(element)
     },
-
+    // 处理纯文案text
     chars (text: string, start: number, end: number) {
       if (!currentParent) {
         if (process.env.NODE_ENV !== 'production') {
@@ -340,6 +349,7 @@ export function parse (
         // remove the whitespace-only node right after an opening tag
         text = ''
       } else if (whitespaceOption) {
+        // 去除空白字符或者将其转换成一个空格
         if (whitespaceOption === 'condense') {
           // in condense mode, remove the whitespace node if it contains
           // line break, otherwise condense to a single space
@@ -350,6 +360,7 @@ export function parse (
       } else {
         text = preserveWhitespace ? ' ' : ''
       }
+      // 去除空白字符或者将其转换成一个空格
       if (text) {
         if (!inPre && whitespaceOption === 'condense') {
           // condense consecutive whitespaces into single space
@@ -434,19 +445,23 @@ export function processElement (
 
   // determine whether this is a plain element after
   // removing structural attributes
+  // 检测是否是空属性节点
   element.plain = (
     !element.key &&
     !element.scopedSlots &&
     !element.attrsList.length
   )
-
+   // 处理:ref或v-bind:ref属性
   processRef(element)
+  //处理标签名为slot的情况
   processSlotContent(element)
   processSlotOutlet(element)
+  // 处理is或v-bind:is属性
   processComponent(element)
   for (let i = 0; i < transforms.length; i++) {
     element = transforms[i](element, options) || element
   }
+  //处理属性
   processAttrs(element)
   return element
 }

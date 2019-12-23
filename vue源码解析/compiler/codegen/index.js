@@ -77,6 +77,7 @@ export function genElement (el: ASTElement, state: CodegenState): string {
     } else {
       let data
       if (!el.plain || (el.pre && state.maybeComponent(el))) {
+        // data: {attrs: {id: 'test'}}
         data = genData(el, state)
       }
 
@@ -221,6 +222,8 @@ export function genData (el: ASTElement, state: CodegenState): string {
 
   // directives first.
   // directives may mutate the el's other properties before they are generated.
+  // 首先对directives进行处理
+  // directives可能会对el上的其他属性有影响，所以先处理
   const dirs = genDirectives(el, state)
   if (dirs) data += dirs + ','
 
@@ -471,6 +474,7 @@ export function genChildren (
   if (children.length) {
     const el: any = children[0]
     // optimize single v-for
+    //对v-for进行简单优化
     if (children.length === 1 &&
       el.for &&
       el.tag !== 'template' &&

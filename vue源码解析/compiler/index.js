@@ -12,10 +12,24 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
   options: CompilerOptions
 ): CompiledResult {
+  /**
+   * ast的值
+   * attrs: [{...}]
+   * attrsList: [{...}]
+   * attrsMap: {id: "test"}
+   * children:[{},{},{}}]
+   */
   const ast = parse(template.trim(), options)
+  // 标记节点静态缓存属性
   if (options.optimize !== false) {
     optimize(ast, options)
   }
+  /** code
+   * return {
+      render: `with(this){return ${code}}`,
+      staticRenderFns: state.staticRenderFns
+    }
+   */
   const code = generate(ast, options)
   return {
     ast,

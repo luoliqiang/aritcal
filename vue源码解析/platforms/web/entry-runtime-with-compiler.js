@@ -44,7 +44,7 @@ Vue.prototype.$mount = function (
               this
             )
           }
-        }
+        }  
       } else if (template.nodeType) {
         template = template.innerHTML
       } else {
@@ -61,7 +61,17 @@ Vue.prototype.$mount = function (
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
-
+      // { compile, compileToFunctions } = createCompiler(baseOptions)
+      // createCompiler = createCompilerCreator(function baseCompile (template: string,options: CompilerOptions) { 
+      //  return {ast,render: code.render,staticRenderFns: code.staticRenderFns}
+      // }
+      // createCompilerCreator (baseCompile: Function): Function {
+        // return function createCompiler () {
+           // return {
+            // compile,
+            // compileToFunctions: createCompileToFunctionFn(compile)
+        //  }
+        //}
       const { render, staticRenderFns } = compileToFunctions(template, {
         outputSourceRange: process.env.NODE_ENV !== 'production',
         shouldDecodeNewlines,
@@ -69,6 +79,7 @@ Vue.prototype.$mount = function (
         delimiters: options.delimiters,
         comments: options.comments
       }, this)
+      // render对应于_c()方法
       options.render = render
       options.staticRenderFns = staticRenderFns
 
