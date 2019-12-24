@@ -109,6 +109,7 @@ export function addHandler (
   }
 
   // check capture modifier
+  // 添加事件修饰符标记
   if (modifiers.capture) {
     delete modifiers.capture
     name = prependModifierMarker('!', name, dynamic)

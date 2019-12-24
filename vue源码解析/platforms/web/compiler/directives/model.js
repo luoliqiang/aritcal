@@ -161,13 +161,16 @@ function genDefaultModel (
   if (number) {
     valueExpression = `_n(${valueExpression})`
   }
-
+  // 会处理v-model="obj.name"这样的复杂表达式，返回表达式return `${value}=${assignment}`或者`$set(${res.exp}, ${res.key}, ${assignment})`
   let code = genAssignmentCode(value, valueExpression)
   if (needCompositionGuard) {
     code = `if($event.target.composing)return;${code}`
   }
-
+  // 像el.props中push进去value
   addProp(el, 'value', `(${value})`)
+  // 往el的events[name]的回调函数上push上一个回调函数newHandler
+  // 所以newHandler就是v-model对应的回调函数，所以v-model最终会解析出一个on函数的回调其key值为input或者change等对应的实践名称到回调列表中，
+  // 其key前面可能带修饰符！~代表阻止冒泡等修饰
   addHandler(el, event, code, null, true)
   if (trim || number) {
     addHandler(el, 'blur', '$forceUpdate()')

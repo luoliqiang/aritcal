@@ -776,6 +776,7 @@ function processAttrs (el) {
   for (i = 0, l = list.length; i < l; i++) {
     name = rawName = list[i].name
     value = list[i].value
+    //如果该属性以v-、@或:开头，表示这是Vue内部指令
     if (dirRE.test(name)) {
       // mark element as dynamic
       el.hasBindings = true
@@ -856,14 +857,15 @@ function processAttrs (el) {
         } else {
           addAttr(el, name, value, list[i], isDynamic)
         }
-      } else if (onRE.test(name)) { // v-on
+      } else if (onRE.test(name)) { // v-on /*v-on的分支*
         name = name.replace(onRE, '')
         isDynamic = dynamicArgRE.test(name)
         if (isDynamic) {
           name = name.slice(1, -1)
         }
         addHandler(el, name, value, modifiers, false, warn, list[i], isDynamic)
-      } else { // normal directives
+      } else { // normal directives //普通指令
+        //去掉指令前缀，比如v-model执行后等于model
         name = name.replace(dirRE, '')
         // parse arg
         const argMatch = name.match(argRE)
@@ -876,6 +878,8 @@ function processAttrs (el) {
             isDynamic = true
           }
         }
+        //执行addDirective给el增加一个directives属性，值是一个数组，例如:[{name: "model", rawName: "v-model", value: "message", arg: null, modifiers: undefined}]
+        // <p v-html="message">{{message}}</p>会得到{attrList: {}, attrMap: {}, children: [], deirective: [arg: null, name: html, value: message]
         addDirective(el, name, rawName, value, arg, isDynamic, modifiers, list[i])
         if (process.env.NODE_ENV !== 'production' && name === 'model') {
           checkForAliasModel(el, value)
